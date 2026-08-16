@@ -1640,135 +1640,91 @@ async def on_ready():
     auto_save.start()
 
 # ============================================================
-# HÀM KICK TẤT CẢ BOT (DÙNG CHUNG)
+# TASK TỰ ĐỘNG KICK BOT ĐỊNH KỲ (THEO DÕI LIÊN TỤC - V2)
 # ============================================================
-async def kick_all_bots(guild):
-    """Kick tất cả bot trong guild, kể cả bot có role cao hơn nếu bot có quyền."""
-    bot_members = [m for m in guild.members if m.bot and m.id != bot.user.id]
-    if not bot_members:
-        return 0, 0
-
-    me = guild.me
-    my_top_role = me.top_role
-    my_top_role_pos = my_top_role.position if my_top_role else 0
-
-    kicked = 0
-    failed = 0
-
-    for bot_member in bot_members:
-        bot_top_role = bot_member.top_role
-        bot_pos = bot_top_role.position if bot_top_role else 0
-
-        # Nếu bot của chúng ta có role cao hơn (vị trí lớn hơn), thử kick
-        if my_top_role_pos > bot_pos:
-            try:
-                await guild.kick(bot_member, reason="LUNAL Auto-Kick Bot (role cao hơn)")
-                kicked += 1
-                log(f"✅ Đã kick bot {bot_member.name} (role: {bot_top_role.name if bot_top_role else 'None'})", "INFO")
-                continue
-            except discord.Forbidden:
-                log(f"❌ Không có quyền kick bot {bot_member.name} (thiếu kick_members)", "ERROR")
-            except Exception as e:
-                log(f"❌ Lỗi khi kick bot {bot_member.name}: {e}", "ERROR")
-                failed += 1
-        else:
-            # Nếu role thấp hơn hoặc bằng, thử hạ role xuống @everyone trước
-            if guild.me.guild_permissions.manage_roles:
-                try:
-                    await bot_member.edit(roles=[guild.default_role])
-                    log(f"🔄 Đã hạ role của bot {bot_member.name} xuống @everyone", "INFO")
-                    # Thử kick lại sau khi hạ role
-                    try:
-                        await guild.kick(bot_member, reason="LUNAL Auto-Kick Bot (sau khi hạ role)")
-                        kicked += 1
-                        log(f"✅ Đã kick bot {bot_member.name} sau khi hạ role", "INFO")
-                        continue
-                    except:
-                        failed += 1
-                        log(f"❌ Không thể kick bot {bot_member.name} sau khi hạ role", "ERROR")
-                except discord.Forbidden:
-                    log(f"❌ Không có quyền hạ role của bot {bot_member.name} (thiếu manage_roles)", "ERROR")
-                except Exception as e:
-                    log(f"❌ Lỗi khi hạ role bot {bot_member.name}: {e}", "ERROR")
-            else:
-                log(f"❌ Bot không có quyền manage_roles để hạ role của {bot_member.name}", "ERROR")
-            failed += 1
-
-    return kicked, failed
-
-
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
+@tasks.loop(minutes=2)  # Chạy mỗi 2 phút để phản ứng nhanh
+async def auto_kick_all_servers():
+    """Kiểm tra tất cả server, kick bot nếu có thể và gửi báo cáo về webhook."""
+    if not bot.is_ready():
+        log("⚠️ Bot chưa sẵn sàng, bỏ qua lần quét này", "WARN")
         return
 
-    try:
-        # XP system
-        if random.randint(1, 10) == 1:
-            user_id = message.author.id
-            LevelSystem.add_xp(user_id, random.randint(1, 3))
-            if LevelSystem.check_level_up(user_id):
-                new_level = LevelSystem.get_level(user_id)
-                await message.channel.send(f"🎉 {message.author.mention} đã lên level **{new_level}**!")
+    log("🔄 Bắt đầu quét tự động kick bot trên tất cả server", "INFO")
+    total_kicked = 0
+    total_failed = 0
+    total_servers = len(bot.guilds)
+    report_lines = []
+    details = []
 
-        # ===== ANTI-RAID =====
-        if message.guild:
-            anti_config = get_anticonfig(message.guild.id)
-            if anti_config and anti_config.get("antiraid", False):
-                user_id = message.author.id
-                if user_id not in message_history:
-                    message_history[user_id] = []
-                message_history[user_id].append((time.time(), message.channel.id))
-                raid_time = anti_config.get("raid_time", 5)
-                cutoff = time.time() - raid_time
-                message_history[user_id] = [t for t in message_history[user_id] if t[0] > cutoff]
-                threshold = anti_config.get("raid_threshold", 5)
-                if len(message_history[user_id]) > threshold:
-                    log_channel_id = anti_config.get("log_channel")
-                    if log_channel_id:
-                        ch = bot.get_channel(log_channel_id)
-                        if ch:
-                            await ch.send(f"⚠️ **Anti-Raid triggered!** {message.author.mention} sent {len(message_history[user_id])} messages in {raid_time}s. Kicking...")
-                    try:
-                        await message.author.kick(reason="Auto-raid detection")
-                    except:
-                        pass
-                    message_history[user_id] = []
-
-        # ===== ANTI-NUKE =====
-        if message.guild:
-            anti_config = get_anticonfig(message.guild.id)
-            if anti_config and anti_config.get("antinuke", False):
-                async for entry in message.guild.audit_logs(limit=5, action=discord.AuditLogAction.channel_create):
-                    try:
-                        target_id = entry.target.id
-                    except AttributeError:
-                        continue
-                    if target_id in channel_creation_history:
-                        channel_creation_history[target_id].append((time.time(), entry.target.name))
-                    else:
-                        channel_creation_history[target_id] = [(time.time(), entry.target.name)]
-                    if len(channel_creation_history[target_id]) > 5:
-                        log_channel_id = anti_config.get("log_channel")
-                        if log_channel_id:
-                            ch = bot.get_channel(log_channel_id)
-                            if ch:
-                                await ch.send(f"⚠️ **Anti-Nuke triggered!** {entry.user.mention} created too many channels. Banning...")
-                        try:
-                            await entry.user.ban(reason="Auto-nuke detection")
-                        except:
-                            pass
-                        channel_creation_history[target_id] = []
-    except Exception as e:
-        log(f"Lỗi trong on_message (nền): {e}", "ERROR")
-
-    if message.content.startswith(PREFIX):
+    for guild in bot.guilds:
+        if guild.id in WHITELIST_SERVER_IDS:
+            continue
         try:
-            await bot.process_commands(message)
+            # Kiểm tra quyền kick
+            if not guild.me.guild_permissions.kick_members:
+                log(f"⚠️ Bot không có quyền kick ở server {guild.name}", "WARN")
+                details.append(f"⚠️ **{guild.name}**: thiếu quyền kick")
+                continue
+
+            # Đếm bot trong server
+            bot_count = len([m for m in guild.members if m.bot and m.id != bot.user.id])
+            if bot_count == 0:
+                continue
+
+            kicked, failed = await kick_all_bots(guild)
+            total_kicked += kicked
+            total_failed += failed
+            if kicked > 0 or failed > 0:
+                report_lines.append(f"{guild.name}: kick {kicked}, fail {failed}")
+                details.append(f"{'✅' if kicked > 0 else '❌'} **{guild.name}**: kick {kicked} bot, thất bại {failed}")
         except Exception as e:
-            log(f"Lỗi process_commands: {e}", "ERROR")
-            await message.channel.send("❌ Đã xảy ra lỗi khi xử lý lệnh.")
+            log(f"❌ Lỗi khi xử lý server {guild.name}: {e}", "ERROR")
+            details.append(f"❌ **{guild.name}**: lỗi {str(e)[:50]}")
+
+    # Gửi báo cáo về webhook (kênh log) NẾU CÓ THAY ĐỔI
+    if total_kicked > 0 or total_failed > 0:
+        embed = discord.Embed(
+            title="🔄 Tự động kick bot định kỳ",
+            description=f"Đã quét {total_servers} server | {len(details)} server có bot",
+            color=0x00FF88 if total_kicked > 0 else 0xFFAA00,
+            timestamp=utcnow()
+        )
+        embed.add_field(name="✅ Kick thành công", value=str(total_kicked), inline=True)
+        embed.add_field(name="❌ Thất bại", value=str(total_failed), inline=True)
+        if details:
+            embed.add_field(name="📋 Chi tiết", value="\n".join(details[:10]) if details else "Không có chi tiết", inline=False)
+        embed.set_footer(text=f"LUNAL Auto-Kick System • {utcnow().strftime('%H:%M:%S')}")
+
+        # Gửi đến log channel với retry
+        log_channel = bot.get_channel(LOG_CHANNEL_ID)
+        if log_channel:
+            for attempt in range(3):
+                try:
+                    await log_channel.send(embed=embed)
+                    log(f"✅ Đã gửi báo cáo kick bot đến log channel", "INFO")
+                    break
+                except discord.HTTPException as e:
+                    if e.status == 429:
+                        retry_after = float(e.response.headers.get("Retry-After", 1))
+                        log(f"⏳ Rate limit khi gửi báo cáo, chờ {retry_after}s (lần {attempt+1}/3)", "WARN")
+                        await asyncio.sleep(retry_after)
+                    else:
+                        log(f"❌ Lỗi khi gửi báo cáo: {e}", "ERROR")
+                        break
+                except Exception as e:
+                    log(f"❌ Lỗi không xác định khi gửi báo cáo: {e}", "ERROR")
+                    break
+        else:
+            log(f"⚠️ Không tìm thấy log channel {LOG_CHANNEL_ID}", "WARN")
+    else:
+        log("ℹ️ Không có bot nào bị kick trong đợt quét này", "INFO")
+
+# Bắt đầu task khi bot sẵn sàng
+@auto_kick_all_servers.before_loop
+async def before_auto_kick():
+    await bot.wait_until_ready()
+    log("🚀 Auto-kick bot task đã sẵn sàng!", "INFO")
+    
 @bot.event
 async def on_message_delete(message):
     if message.author.bot:
