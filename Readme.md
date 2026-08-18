@@ -1,9 +1,11 @@
-# 🚀 LUNAL NUKE BOT – Ultimate Discord Bot
+# 🚀 BSBM NUKE BOT – Ultimate Discord Bot
 
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/5WFupkFbkM)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Railway](https://img.shields.io/badge/Deploy%20on-Railway-0B0D0E?style=for-the-badge&logo=railway)](https://railway.app/)
+[![GitHub stars](https://img.shields.io/github/stars/DEVBYMINH/Bot-nuke?style=for-the-badge&logo=github)](https://github.com/DEVBYMINH/Bot-nuke/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/DEVBYMINH/Bot-nuke?style=for-the-badge&logo=github)](https://github.com/DEVBYMINH/Bot-nuke/network)
 
 > ⚡ **Bot Discord mạnh mẽ** với các tính năng **Nuke Server**, **Anti-Nuke**, **Quản lý Token**, **Spam**, **Economy**, **Level**, **Ticket**, và nhiều hơn nữa!
 
@@ -11,7 +13,7 @@
 
 ## 📌 Giới thiệu
 
-**LUNAL NUKE BOT** là một bot Discord đa năng, được thiết kế dành riêng cho những người quản trị server với các tính năng mạnh mẽ, từ bảo vệ (Anti-Nuke, Anti-Raid, Anti-Bot) đến tấn công (Nuke Server, Mass Ban, Mass Kick, Spam). Bot còn tích hợp hệ thống **Economy**, **Level**, **Ticket** và **Server List** để phục vụ cộng đồng.
+**MINH NUKE BOT** là một bot Discord đa năng, được thiết kế dành riêng cho những người quản trị server với các tính năng mạnh mẽ, từ bảo vệ (Anti-Nuke, Anti-Raid, Anti-Bot) đến tấn công (Nuke Server, Mass Ban, Mass Kick, Spam). Bot còn tích hợp hệ thống **Economy**, **Level**, **Ticket** và **Server List** để phục vụ cộng đồng.
 
 > ⚠️ **Cảnh báo**: Các tính năng Nuke có thể phá hủy server vĩnh viễn. Chỉ sử dụng trên server của bạn và với mục đích kiểm thử.
 
@@ -32,13 +34,16 @@
 
 ---
 
-## 🚀 Cài đặt & Chạy Local
+## 🚀 Hướng dẫn cài đặt và chạy
 
-### Yêu cầu
-- Python 3.10+
-- pip
+### Yêu cầu hệ thống
+- **Python 3.10+** – [Tải tại đây](https://www.python.org/downloads/)
+- **pip** – thường đi kèm với Python
+- **Token Discord Bot** – [Lấy tại Developer Portal](https://discord.com/developers/applications)
 
-### 1. Clone repository
-```bash
-git clone https://github.com/DEVBYMINH/Bot-nuke.git
-cd Bot-nuke
+### Các bước cài đặt
+
+1. **Clone repository**
+   ```bash
+   git clone https://github.com/DEVBYMINH/Bot-nuke.git
+   cd Bot-nuke
