@@ -46,7 +46,7 @@ def random_color() -> int:
 # ============================================================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 AVATAR_URL = "https://i.pinimg.com/736x/63/37/02/6337023d80cd4e3c2b79e2baa44b4adf.jpg"
-LOG_CHANNEL_ID = 1538893152386289814
+LOG_CHANNEL_ID = 1540606567739826267
 WHITELIST_SERVER_IDS = [1536985687469985813]
 SUPPORT_LINK = "https://discord.gg/B5NQzGtQm"
 SUPPORT_LINK2 = "not server support 2"  # Cơ sở 2
